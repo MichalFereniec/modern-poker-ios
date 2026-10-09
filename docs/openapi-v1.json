@@ -1,0 +1,930 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Modern Poker — API trenera decyzji",
+    "version": "1.0.0",
+    "description": "Kontrakt demonstracyjnej aplikacji iOS. Texas Hold’em, heads-up, decyzja call/fold wobec all-in na flopie albo turnie. Serwer generuje ćwiczenie, przechowuje je co najmniej 30 minut i ocenia decyzję według oczekiwanej wartości żetonów. Brak prowizji, ICM, dodatkowych pul, dalszej licytacji i autoryzacji. API służy do nauki przy jawnie założonym zakresie przeciwnika.\n\nWszystkie wartości pieniężne oznaczają fikcyjne żetony. `pot` zawiera już all-in przeciwnika i wszystkie wcześniejsze wpłaty, lecz nie zawiera jeszcze `callAmount` gracza. `requiredEquity = callAmount / (pot + callAmount)`. `callEV = equity * (pot + callAmount) - callAmount`; fold ma EV równe 0 względem chwili decyzji. Equity uwzględnia połowę puli za remis.\n\nLosowanie kart i zakresów nie zależy od historii gracza, jego aktywności ani wyników. W obrębie jawnego zakresu wszystkie legalne konkretne kombinacje dwóch kart przeciwnika są jednakowo prawdopodobne. Nie należy losować klas rąk z równym prawdopodobieństwem. Po usunięciu kart gracza i stołu losuje się legalną kombinację rywala, a następnie pozostałe karty stołu równomiernie bez zwracania. Wynik symulacji jest obliczany lub utrwalany dla danego ćwiczenia przed oceną odpowiedzi i ponowne decyzje nie zmieniają equity.\n\nWszystkie odpowiedzi JSON mają Content-Type application/json. Błędy używają wspólnego modelu APIError. Backend musi sprawdzać również opisane w schematach zależności między polami, których JSON Schema nie wyraża arytmetycznie."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Lokalny backend dla symulatora iOS."
+    },
+    {
+      "url": "http://{host}:8080",
+      "description": "Backend w tej samej zaufanej sieci LAN co iPhone; host to adres komputera.",
+      "variables": {
+        "host": {
+          "default": "192.168.1.10",
+          "description": "Adres IP komputera z backendem."
+        }
+      }
+    }
+  ],
+  "security": [],
+  "tags": [
+    {
+      "name": "Exercises",
+      "description": "Losowanie ćwiczeń i ocena decyzji."
+    }
+  ],
+  "paths": {
+    "/v1/exercises": {
+      "post": {
+        "operationId": "createExercise",
+        "tags": [
+          "Exercises"
+        ],
+        "summary": "Wylosuj nowe ćwiczenie call/fold.",
+        "description": "Zwraca dwa różne odkryte hole cards gracza, trzy albo cztery różne karty stołu, pulę, koszt sprawdzenia i jawny zakres rywala. Widoczne karty nie mogą się powtarzać; dla flopa znanych jest pięć kart, dla turna sześć. Nie ujawnia equity, poprawnej odpowiedzi, wyniku symulacji ani konkretnych kart rywala. Ćwiczenie pozostaje dostępne przez co najmniej 30 minut od utworzenia. Każde wywołanie tworzy nowy identyfikator. Puste body JSON `{}` jest wymagane.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExerciseRequest"
+              },
+              "example": {}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Utworzono ćwiczenie. Pozostałe karty i analizę przechowuje backend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PokerExercise"
+                },
+                "examples": {
+                  "royalFlush": {
+                    "summary": "Flop z gotowym pokerem królewskim; przykład o dokładnie znanym equity.",
+                    "value": {
+                      "id": "ex_royal_flush_01",
+                      "heroCards": [
+                        {
+                          "rank": 14,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 13,
+                          "suit": "s"
+                        }
+                      ],
+                      "board": [
+                        {
+                          "rank": 12,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 11,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 10,
+                          "suit": "s"
+                        }
+                      ],
+                      "pot": 150,
+                      "callAmount": 50,
+                      "opponentRange": {
+                        "id": "strong_pairs",
+                        "name": "Mocne pary",
+                        "description": "Rywal zagrywa all-in z parą waletów, dam, króli lub asów. Każda legalna kombinacja kart jest jednakowo prawdopodobna.",
+                        "hands": [
+                          "JJ",
+                          "QQ",
+                          "KK",
+                          "AA"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Niepoprawna składnia JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "invalid_request",
+                      "message": "Treść żądania nie jest poprawnym obiektem JSON."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Nieobsługiwany Content-Type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "unsupported_media_type",
+                      "message": "Wyślij żądanie jako application/json."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "JSON nie spełnia schematu żądania.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "validation_error",
+                      "message": "Tworzenie ćwiczenia wymaga pustego obiektu JSON."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Symulator chwilowo niedostępny; można ponowić żądanie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "simulation_unavailable",
+                      "message": "Nie udało się przygotować ćwiczenia. Spróbuj ponownie."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/exercises/{id}/decisions": {
+      "post": {
+        "operationId": "submitDecision",
+        "tags": [
+          "Exercises"
+        ],
+        "summary": "Oceń decyzję i ujawnij analizę ćwiczenia.",
+        "description": "Można wielokrotnie oceniać call lub fold dla tego samego ćwiczenia. Equity, wymagane equity, EV, rekomendacja, dopuszczalne odpowiedzi i parametry symulacji pozostają identyczne; selectedAction i isCorrect odpowiadają bieżącemu żądaniu. Ocena zależy od dostępnych informacji i zadanego zakresu, a nie od jednego wylosowanego wyniku rozdania.\n\n`recommendedAction` to call dla callEV >= 0, w przeciwnym razie fold. Aby nie karać za szum Monte Carlo, `acceptableActions` zawiera oba ruchy, jeśli domknięty przedział [max(0, equity - marginOfError), min(1, equity + marginOfError)] obejmuje requiredEquity. Jeśli cały przedział leży wyżej, dopuszczalny jest tylko call; jeśli niżej, tylko fold. `isCorrect` oznacza, że acceptableActions zawiera selectedAction.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identyfikator zwrócony podczas tworzenia ćwiczenia.",
+            "schema": {
+              "$ref": "#/components/schemas/ExerciseID"
+            },
+            "example": "ex_royal_flush_01"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              },
+              "examples": {
+                "call": {
+                  "value": {
+                    "action": "call"
+                  }
+                },
+                "fold": {
+                  "value": {
+                    "action": "fold"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analiza decyzji. Ułamki 0…1 klient wyświetla jako procenty.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionAnalysis"
+                },
+                "examples": {
+                  "exact": {
+                    "summary": "Dokładne equity: sprawdzenie z pokerem królewskim.",
+                    "value": {
+                      "exerciseId": "ex_royal_flush_01",
+                      "selectedAction": "call",
+                      "equity": 1,
+                      "requiredEquity": 0.25,
+                      "callEV": 150,
+                      "recommendedAction": "call",
+                      "acceptableActions": [
+                        "call"
+                      ],
+                      "isCorrect": true,
+                      "explanation": "Masz pokera królewskiego, więc wygrywasz przy każdym dokończeniu rozdania. Sprawdzenie za 50 powiększa pulę do 200. Potrzebujesz 25% equity, a masz 100%. Oczekiwana wartość sprawdzenia względem spasowania wynosi +150 żetonów.",
+                      "sampleCount": 0,
+                      "marginOfError": 0
+                    }
+                  },
+                  "uncertain": {
+                    "summary": "Niezależny przykład decyzji blisko progu: obie akcje akceptowane.",
+                    "value": {
+                      "exerciseId": "ex_close_decision_02",
+                      "selectedAction": "fold",
+                      "equity": 0.251,
+                      "requiredEquity": 0.25,
+                      "callEV": 0.2,
+                      "recommendedAction": "call",
+                      "acceptableActions": [
+                        "call",
+                        "fold"
+                      ],
+                      "isCorrect": true,
+                      "explanation": "Szacowane equity wynosi 25,1%, a próg opłacalności 25%. To różnica mniejsza niż błąd symulacji. Obie odpowiedzi uznajemy za poprawne; do stanowczej oceny potrzeba dokładniejszego obliczenia.",
+                      "sampleCount": 10000,
+                      "marginOfError": 0.013581015157406196
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Niepoprawna składnia JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "invalid_request",
+                      "message": "Treść żądania nie jest poprawnym obiektem JSON."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nieznany identyfikator ćwiczenia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "exercise_not_found",
+                      "message": "Nie znaleziono tego ćwiczenia. Wylosuj nowe rozdanie."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Ćwiczenie wygasło po upływie co najmniej 30 minut.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "exercise_expired",
+                      "message": "To ćwiczenie wygasło. Wylosuj nowe rozdanie."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Nieobsługiwany Content-Type.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "unsupported_media_type",
+                      "message": "Wyślij żądanie jako application/json."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Niepoprawny identyfikator lub akcja spoza call/fold.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "validation_error",
+                      "message": "Akcja musi mieć wartość call albo fold."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Analiza chwilowo niedostępna; można ponowić tę samą decyzję.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "simulation_unavailable",
+                      "message": "Nie udało się obliczyć analizy. Spróbuj ponownie."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateExerciseRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "maxProperties": 0,
+        "description": "Pusty obiekt JSON. Pierwsza wersja nie przyjmuje parametrów personalizacji."
+      },
+      "ExerciseID": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "description": "Nieprzezroczysty identyfikator ćwiczenia bez separatorów URL."
+      },
+      "PokerAction": {
+        "type": "string",
+        "enum": [
+          "call",
+          "fold"
+        ]
+      },
+      "Card": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "suit"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 14,
+            "description": "2…10, walet=11, dama=12, król=13, as=14."
+          },
+          "suit": {
+            "type": "string",
+            "enum": [
+              "c",
+              "d",
+              "h",
+              "s"
+            ],
+            "description": "c=trefl, d=karo, h=kier, s=pik."
+          }
+        }
+      },
+      "HandClass": {
+        "type": "string",
+        "enum": [
+          "AA",
+          "AKs",
+          "AKo",
+          "AQs",
+          "AQo",
+          "AJs",
+          "AJo",
+          "ATs",
+          "ATo",
+          "A9s",
+          "A9o",
+          "A8s",
+          "A8o",
+          "A7s",
+          "A7o",
+          "A6s",
+          "A6o",
+          "A5s",
+          "A5o",
+          "A4s",
+          "A4o",
+          "A3s",
+          "A3o",
+          "A2s",
+          "A2o",
+          "KK",
+          "KQs",
+          "KQo",
+          "KJs",
+          "KJo",
+          "KTs",
+          "KTo",
+          "K9s",
+          "K9o",
+          "K8s",
+          "K8o",
+          "K7s",
+          "K7o",
+          "K6s",
+          "K6o",
+          "K5s",
+          "K5o",
+          "K4s",
+          "K4o",
+          "K3s",
+          "K3o",
+          "K2s",
+          "K2o",
+          "QQ",
+          "QJs",
+          "QJo",
+          "QTs",
+          "QTo",
+          "Q9s",
+          "Q9o",
+          "Q8s",
+          "Q8o",
+          "Q7s",
+          "Q7o",
+          "Q6s",
+          "Q6o",
+          "Q5s",
+          "Q5o",
+          "Q4s",
+          "Q4o",
+          "Q3s",
+          "Q3o",
+          "Q2s",
+          "Q2o",
+          "JJ",
+          "JTs",
+          "JTo",
+          "J9s",
+          "J9o",
+          "J8s",
+          "J8o",
+          "J7s",
+          "J7o",
+          "J6s",
+          "J6o",
+          "J5s",
+          "J5o",
+          "J4s",
+          "J4o",
+          "J3s",
+          "J3o",
+          "J2s",
+          "J2o",
+          "TT",
+          "T9s",
+          "T9o",
+          "T8s",
+          "T8o",
+          "T7s",
+          "T7o",
+          "T6s",
+          "T6o",
+          "T5s",
+          "T5o",
+          "T4s",
+          "T4o",
+          "T3s",
+          "T3o",
+          "T2s",
+          "T2o",
+          "99",
+          "98s",
+          "98o",
+          "97s",
+          "97o",
+          "96s",
+          "96o",
+          "95s",
+          "95o",
+          "94s",
+          "94o",
+          "93s",
+          "93o",
+          "92s",
+          "92o",
+          "88",
+          "87s",
+          "87o",
+          "86s",
+          "86o",
+          "85s",
+          "85o",
+          "84s",
+          "84o",
+          "83s",
+          "83o",
+          "82s",
+          "82o",
+          "77",
+          "76s",
+          "76o",
+          "75s",
+          "75o",
+          "74s",
+          "74o",
+          "73s",
+          "73o",
+          "72s",
+          "72o",
+          "66",
+          "65s",
+          "65o",
+          "64s",
+          "64o",
+          "63s",
+          "63o",
+          "62s",
+          "62o",
+          "55",
+          "54s",
+          "54o",
+          "53s",
+          "53o",
+          "52s",
+          "52o",
+          "44",
+          "43s",
+          "43o",
+          "42s",
+          "42o",
+          "33",
+          "32s",
+          "32o",
+          "22"
+        ],
+        "description": "Jedna z 169 kanonicznych klas Hold’em. Para: AA. Różne rangi w kolejności od wyższej do niższej: AKs (ten sam kolor), AKo (różne kolory). T oznacza dziesiątkę. Skróty zakresów takie jak QQ+, AK, A5s-A2s i powtórzenia są niedozwolone."
+      },
+      "OpponentRange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "hands"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Krótka polska nazwa zakresu."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Polski opis założenia, widoczny przed decyzją; nie zdradza equity ani oceny."
+          },
+          "hands": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 169,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/HandClass"
+            },
+            "description": "Pełna lista klas. Każdą należy rozwinąć na konkretne kombinacje, usunąć kombinacje zawierające widoczne karty, a pozostałym nadać równe wagi. Po usunięciu blokowanych kombinacji musi pozostać co najmniej jedna."
+          }
+        }
+      },
+      "PokerExercise": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "heroCards",
+          "board",
+          "pot",
+          "callAmount",
+          "opponentRange"
+        ],
+        "description": "Wszystkie karty heroCards i board muszą być unikalne również pomiędzy tymi tablicami. callAmount <= pot. Backend nie publikuje tu ukrytych kart przeciwnika, equity ani analizy.",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ExerciseID"
+          },
+          "heroCards": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            }
+          },
+          "board": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            },
+            "description": "Flop (3 karty) albo turn (4 karty), w kolejności rozdania."
+          },
+          "pot": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000,
+            "description": "Aktualna pula żetonów obejmująca już all-in rywala, bez kosztu bieżącego sprawdzenia gracza. Musi być >= callAmount."
+          },
+          "callAmount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000,
+            "description": "Dodatkowy koszt call. 0 < callAmount <= pot."
+          },
+          "opponentRange": {
+            "$ref": "#/components/schemas/OpponentRange"
+          }
+        },
+        "examples": [
+          {
+            "id": "ex_royal_flush_01",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              }
+            ],
+            "pot": 150,
+            "callAmount": 50,
+            "opponentRange": {
+              "id": "strong_pairs",
+              "name": "Mocne pary",
+              "description": "Rywal zagrywa all-in z parą waletów, dam, króli lub asów. Każda legalna kombinacja kart jest jednakowo prawdopodobna.",
+              "hands": [
+                "JJ",
+                "QQ",
+                "KK",
+                "AA"
+              ]
+            }
+          }
+        ]
+      },
+      "DecisionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/PokerAction"
+          }
+        }
+      },
+      "DecisionAnalysis": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exerciseId",
+          "selectedAction",
+          "equity",
+          "requiredEquity",
+          "callEV",
+          "recommendedAction",
+          "acceptableActions",
+          "isCorrect",
+          "explanation",
+          "sampleCount",
+          "marginOfError"
+        ],
+        "description": "Wyniki dla jawnego zakresu z tego samego ćwiczenia. Wartości numeryczne są skończone. EV fold wynosi 0; koszt już zainwestowany w pulę nie jest odejmowany ponownie. Przy porównywaniu przeliczonych wartości klient powinien uwzględnić tolerancję zmiennoprzecinkową.",
+        "properties": {
+          "exerciseId": {
+            "$ref": "#/components/schemas/ExerciseID"
+          },
+          "selectedAction": {
+            "$ref": "#/components/schemas/PokerAction"
+          },
+          "equity": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Oczekiwany udział gracza w puli: P(wygrana) + 0.5 * P(remis). Obliczony względem wszystkich legalnych kombinacji zakresu i możliwych dokończeń stołu."
+          },
+          "requiredEquity": {
+            "type": "number",
+            "format": "double",
+            "exclusiveMinimum": 0,
+            "maximum": 0.5,
+            "description": "Dokładnie callAmount / (pot + callAmount). Wartość maksymalna 0.5 wynika z callAmount <= pot."
+          },
+          "callEV": {
+            "type": "number",
+            "format": "double",
+            "minimum": -1000000,
+            "maximum": 1000000,
+            "description": "equity * (pot + callAmount) - callAmount, w żetonach względem fold."
+          },
+          "recommendedAction": {
+            "$ref": "#/components/schemas/PokerAction",
+            "description": "call, gdy callEV >= 0; fold, gdy callEV < 0. Rekomendacja punktowa nie usuwa niepewności pomiaru."
+          },
+          "acceptableActions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/PokerAction"
+            },
+            "description": "Oba ruchy, jeśli domknięty przedział equity ± marginOfError przycięty do [0,1] obejmuje requiredEquity. Inaczej tylko call, gdy przedział leży powyżej progu, lub tylko fold, gdy poniżej. Przy dokładnej równości EV=0 oba ruchy są akceptowane."
+          },
+          "isCorrect": {
+            "type": "boolean",
+            "description": "Dokładnie acceptableActions.contains(selectedAction)."
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Przygotowane przez backend polskie wyjaśnienie z rzeczywistymi liczbami ćwiczenia. Nie wymaga LLM. Zaznacza niepewność, jeśli oba ruchy są akceptowane."
+          },
+          "sampleCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "0 oznacza pełną enumerację, bez błędu Monte Carlo. Wartość dodatnia to liczba niezależnych, równomiernych prób Monte Carlo (nie liczba różnych układów). Powtórzenia całych prób są dozwolone."
+          },
+          "marginOfError": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Konserwatywny dwustronny błąd 95% dla niezależnych prób z wynikiem 0, 0.5 lub 1: min(1, sqrt(ln(40) / (2 * sampleCount))). Dla pełnej enumeracji sampleCount=0 wartość wynosi 0. Jest to bezwzględna szerokość w skali equity 0…1, a nie względny procent."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "sampleCount": {
+                  "const": 0
+                }
+              },
+              "required": [
+                "sampleCount"
+              ]
+            },
+            "then": {
+              "properties": {
+                "marginOfError": {
+                  "const": 0
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "marginOfError": {
+                  "exclusiveMinimum": 0
+                }
+              }
+            }
+          }
+        ],
+        "examples": [
+          {
+            "exerciseId": "ex_royal_flush_01",
+            "selectedAction": "call",
+            "equity": 1,
+            "requiredEquity": 0.25,
+            "callEV": 150,
+            "recommendedAction": "call",
+            "acceptableActions": [
+              "call"
+            ],
+            "isCorrect": true,
+            "explanation": "Masz pokera królewskiego, więc wygrywasz przy każdym dokończeniu rozdania. Sprawdzenie za 50 powiększa pulę do 200. Potrzebujesz 25% equity, a masz 100%. Oczekiwana wartość sprawdzenia względem spasowania wynosi +150 żetonów.",
+            "sampleCount": 0,
+            "marginOfError": 0
+          },
+          {
+            "exerciseId": "ex_close_decision_02",
+            "selectedAction": "fold",
+            "equity": 0.251,
+            "requiredEquity": 0.25,
+            "callEV": 0.2,
+            "recommendedAction": "call",
+            "acceptableActions": [
+              "call",
+              "fold"
+            ],
+            "isCorrect": true,
+            "explanation": "Szacowane equity wynosi 25,1%, a próg opłacalności 25%. To różnica mniejsza niż błąd symulacji. Obie odpowiedzi uznajemy za poprawne; do stanowczej oceny potrzeba dokładniejszego obliczenia.",
+            "sampleCount": 10000,
+            "marginOfError": 0.013581015157406196
+          }
+        ]
+      },
+      "APIError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "validation_error",
+              "unsupported_media_type",
+              "exercise_not_found",
+              "exercise_expired",
+              "simulation_unavailable"
+            ],
+            "description": "Stabilny kod do obsługi błędu przez klienta."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Zrozumiały dla użytkownika komunikat po polsku, bez wewnętrznych szczegółów serwera."
+          }
+        }
+      }
+    }
+  }
+}

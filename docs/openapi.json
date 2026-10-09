@@ -1,0 +1,3187 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Modern Poker — pełne rozdania",
+    "version": "2.0.0",
+    "description": "Texas Hold’em heads-up, nauka od flopa do turna, rivera i showdownu albo wcześniejszego fold. Fikcyjne żetony, brak rake, ICM, bocznych pul i autoryzacji. Interfejs pokazuje tylko dozwolone presety z autorytatywnego stanu serwera. v1 pozostaje opisane w openapi-v1.json.\n\nIDEMPOTENCJA: klient generuje unikalny requestId dla logicznej operacji i używa go niezmiennie po timeout, anulowaniu lub utracie połączenia. Klucz jest rozpatrywany w przestrzeni danego endpointu (create albo id konkretnego rozdania). Serwer atomowo przechowuje payload, mutację i kompletną odpowiedź. Taki sam klucz+payload zwraca pierwotny status i odpowiedź, nawet gdy expectedRevision jest już stare lub rozdanie się zakończyło. Ten sam klucz z innym payloadem zwraca 409 idempotency_conflict. Dopiero po lookupie idempotencji sprawdzaj aktualną rewizję. Jedna akcja nigdy nie pobiera żetonów drugi raz. Odpowiedź i klucz należy zachować przez cały czas dostępności rozdania, co najmniej 30 minut; TTL nie może skasować idempotencji wcześniej niż stanu. Rewizja rośnie po każdym zatwierdzonym ruchu hero i reakcji rywala. Niepowodzenie obliczenia nie może częściowo zmienić stanu.\n\nLOSOWOŚĆ: tasowanie i jawny zakres nie zależą od powrotów gracza ani wybranej odpowiedzi. Ukryte karty przeciwnika dobierane są spośród legalnych konkretnych kombinacji zakresu, równomiernie po usunięciu blockerów. Pozostałe karty stołu są losowane bez zwracania i utrwalone dla całego rozdania. Ręka przeciwnika pozostaje ta sama; publiczny zakres to jawne założenie, nie ujawnienie konkretnej ręki. Rozszerzony board może blokować kolejne kombinacje zakresu przy analizie. History, summary, explanation oraz błędy nie mogą zdradzać ukrytych kart. Przed showdown nie wysyłaj ich nigdzie; po fold opponentCards pozostaje [].\n\nANALIZA: zawsze z publicznego stanu przed ruchem i jawnego zakresu, niezależnie od faktycznej ręki rywala, nowych kart i wyniku. Nie jest strategią GTO. Equity nie przesądza o poprawności check/bet/raise; callEV to ograniczony benchmark bez przyszłych kosztów. Nie oznaczaj podbicia jako poprawnego wyłącznie na podstawie tego benchmarku.\n\nKWOTY: amount to dodatkowe żetony płacone teraz, dla raise łącznie z call. Check/fold=0. Ongoing: pot zawiera wszystkie wpłaty, stosy nie zawierają wpłat. Completed: stosy zawierają już wypłaty, pot pozostaje rozliczoną pulą historyczną. Wszystkie JSONy mają Content-Type application/json; kwoty są całkowite, liczby analizy skończone. Pola opcjonalne mogą być pominięte lub null, pozostałe nigdy null. Backend waliduje również zależności arytmetyczne opisane w schematach."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080",
+      "description": "Lokalny backend deweloperski; w aplikacji ustaw sam adres bazowy bez /v2/hands."
+    }
+  ],
+  "paths": {
+    "/v2/hands": {
+      "post": {
+        "operationId": "startHand",
+        "summary": "Rozpocznij pełne rozdanie",
+        "description": "Body jest wymagane. Serwer losuje jedno rozdanie, zapisuje ukryty runout i zwraca pierwszy stan na flopie. Retry z tym samym requestId nie losuje ponownie.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHandRequest"
+              },
+              "examples": {
+                "start": {
+                  "value": {
+                    "requestId": "request_create_1"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Nowe rozdanie na flopie, revision=0,status=awaitingAction. Idempotentny retry zwraca identyczny oryginalny stan i również 201.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PokerHand"
+                },
+                "examples": {
+                  "flop": {
+                    "value": {
+                      "id": "hand_royal_001",
+                      "revision": 0,
+                      "street": "flop",
+                      "status": "awaitingAction",
+                      "heroCards": [
+                        {
+                          "rank": 14,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 13,
+                          "suit": "s"
+                        }
+                      ],
+                      "board": [
+                        {
+                          "rank": 12,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 11,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 10,
+                          "suit": "s"
+                        }
+                      ],
+                      "pot": 100,
+                      "heroStack": 950,
+                      "opponentStack": 950,
+                      "toCall": 0,
+                      "opponentRange": {
+                        "id": "premium",
+                        "name": "Mocny zakres",
+                        "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                        "hands": [
+                          "AA",
+                          "KK",
+                          "QQ",
+                          "JJ",
+                          "TT"
+                        ]
+                      },
+                      "availableActions": [
+                        {
+                          "action": "check",
+                          "amount": 0
+                        },
+                        {
+                          "action": "bet",
+                          "amount": 50
+                        },
+                        {
+                          "action": "bet",
+                          "amount": 100
+                        }
+                      ],
+                      "history": []
+                    }
+                  },
+                  "facingBet": {
+                    "value": {
+                      "id": "hand_fold_002",
+                      "revision": 0,
+                      "street": "flop",
+                      "status": "awaitingAction",
+                      "heroCards": [
+                        {
+                          "rank": 14,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 13,
+                          "suit": "s"
+                        }
+                      ],
+                      "board": [
+                        {
+                          "rank": 12,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 11,
+                          "suit": "s"
+                        },
+                        {
+                          "rank": 10,
+                          "suit": "s"
+                        }
+                      ],
+                      "pot": 150,
+                      "heroStack": 950,
+                      "opponentStack": 900,
+                      "toCall": 50,
+                      "opponentRange": {
+                        "id": "premium",
+                        "name": "Mocny zakres",
+                        "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                        "hands": [
+                          "AA",
+                          "KK",
+                          "QQ",
+                          "JJ",
+                          "TT"
+                        ]
+                      },
+                      "availableActions": [
+                        {
+                          "action": "fold",
+                          "amount": 0
+                        },
+                        {
+                          "action": "call",
+                          "amount": 50
+                        },
+                        {
+                          "action": "raise",
+                          "amount": 150
+                        }
+                      ],
+                      "history": [
+                        {
+                          "id": "fold_event_1",
+                          "street": "flop",
+                          "player": "opponent",
+                          "action": "bet",
+                          "amount": 50
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Niepoprawne żądanie JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "invalid_request",
+                      "message": "Niepoprawne żądanie JSON."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Wyślij żądanie jako application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "unsupported_media_type",
+                      "message": "Wyślij żądanie jako application/json."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Nieprawidłowe pola żądania.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "validation_error",
+                      "message": "Nieprawidłowe pola żądania."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Obliczenie chwilowo niedostępne. Ponów identyczne żądanie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "simulation_unavailable",
+                      "message": "Obliczenie chwilowo niedostępne. Ponów identyczne żądanie."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ten requestId został już użyty dla innego żądania.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "idempotency_conflict",
+                      "message": "Ten requestId został już użyty dla innego żądania."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v2/hands/{id}/actions": {
+      "post": {
+        "operationId": "actOnHand",
+        "summary": "Wykonaj jeden ruch hero i reakcję rywala",
+        "description": "Obsługa: idempotency lookup → revision/preset validation → analiza poprzedniego stanu → atomowa zmiana i automatyczna reakcja rywala → zapis odpowiedzi. Pełny ciąg przykładów ma id hand_royal_001: flop check(request_action_1)→turn; turn bet 50(request_action_2)→river; river check(request_action_3)→showdown. Oddzielny przykład hand_fold_002 pokazuje fold wobec zakładu.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandActionRequest"
+              },
+              "examples": {
+                "flopCheck": {
+                  "value": {
+                    "requestId": "request_action_1",
+                    "expectedRevision": 0,
+                    "action": "check",
+                    "amount": 0
+                  }
+                },
+                "turnBet": {
+                  "value": {
+                    "requestId": "request_action_2",
+                    "expectedRevision": 1,
+                    "action": "bet",
+                    "amount": 50
+                  }
+                },
+                "riverCheck": {
+                  "value": {
+                    "requestId": "request_action_3",
+                    "expectedRevision": 2,
+                    "action": "check",
+                    "amount": 0
+                  }
+                },
+                "fold": {
+                  "value": {
+                    "requestId": "request_fold_1",
+                    "expectedRevision": 0,
+                    "action": "fold",
+                    "amount": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pełny stan po ruchu i analiza publicznego stanu sprzed ruchu. Idempotentny retry zwraca identyczną odpowiedź.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandActionResponse"
+                },
+                "examples": {
+                  "turn": {
+                    "value": {
+                      "hand": {
+                        "id": "hand_royal_001",
+                        "revision": 1,
+                        "street": "turn",
+                        "status": "awaitingAction",
+                        "heroCards": [
+                          {
+                            "rank": 14,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 13,
+                            "suit": "s"
+                          }
+                        ],
+                        "board": [
+                          {
+                            "rank": 12,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 11,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 10,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 2,
+                            "suit": "d"
+                          }
+                        ],
+                        "pot": 100,
+                        "heroStack": 950,
+                        "opponentStack": 950,
+                        "toCall": 0,
+                        "opponentRange": {
+                          "id": "premium",
+                          "name": "Mocny zakres",
+                          "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                          "hands": [
+                            "AA",
+                            "KK",
+                            "QQ",
+                            "JJ",
+                            "TT"
+                          ]
+                        },
+                        "availableActions": [
+                          {
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "action": "bet",
+                            "amount": 50
+                          },
+                          {
+                            "action": "bet",
+                            "amount": 100
+                          }
+                        ],
+                        "history": [
+                          {
+                            "id": "event_1",
+                            "street": "flop",
+                            "player": "hero",
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "id": "event_2",
+                            "street": "flop",
+                            "player": "opponent",
+                            "action": "check",
+                            "amount": 0
+                          }
+                        ]
+                      },
+                      "analysis": {
+                        "street": "flop",
+                        "action": "check",
+                        "equity": 1,
+                        "sampleCount": 0,
+                        "marginOfError": 0,
+                        "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+                      }
+                    }
+                  },
+                  "river": {
+                    "value": {
+                      "hand": {
+                        "id": "hand_royal_001",
+                        "revision": 2,
+                        "street": "river",
+                        "status": "awaitingAction",
+                        "heroCards": [
+                          {
+                            "rank": 14,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 13,
+                            "suit": "s"
+                          }
+                        ],
+                        "board": [
+                          {
+                            "rank": 12,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 11,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 10,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 2,
+                            "suit": "d"
+                          },
+                          {
+                            "rank": 7,
+                            "suit": "c"
+                          }
+                        ],
+                        "pot": 200,
+                        "heroStack": 900,
+                        "opponentStack": 900,
+                        "toCall": 0,
+                        "opponentRange": {
+                          "id": "premium",
+                          "name": "Mocny zakres",
+                          "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                          "hands": [
+                            "AA",
+                            "KK",
+                            "QQ",
+                            "JJ",
+                            "TT"
+                          ]
+                        },
+                        "availableActions": [
+                          {
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "action": "bet",
+                            "amount": 100
+                          },
+                          {
+                            "action": "bet",
+                            "amount": 200
+                          }
+                        ],
+                        "history": [
+                          {
+                            "id": "event_1",
+                            "street": "flop",
+                            "player": "hero",
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "id": "event_2",
+                            "street": "flop",
+                            "player": "opponent",
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "id": "event_3",
+                            "street": "turn",
+                            "player": "hero",
+                            "action": "bet",
+                            "amount": 50
+                          },
+                          {
+                            "id": "event_4",
+                            "street": "turn",
+                            "player": "opponent",
+                            "action": "call",
+                            "amount": 50
+                          }
+                        ]
+                      },
+                      "analysis": {
+                        "street": "turn",
+                        "action": "bet",
+                        "equity": 1,
+                        "sampleCount": 0,
+                        "marginOfError": 0,
+                        "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+                      }
+                    }
+                  },
+                  "showdown": {
+                    "value": {
+                      "hand": {
+                        "id": "hand_royal_001",
+                        "revision": 3,
+                        "street": "showdown",
+                        "status": "completed",
+                        "heroCards": [
+                          {
+                            "rank": 14,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 13,
+                            "suit": "s"
+                          }
+                        ],
+                        "board": [
+                          {
+                            "rank": 12,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 11,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 10,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 2,
+                            "suit": "d"
+                          },
+                          {
+                            "rank": 7,
+                            "suit": "c"
+                          }
+                        ],
+                        "pot": 200,
+                        "heroStack": 1100,
+                        "opponentStack": 900,
+                        "toCall": 0,
+                        "opponentRange": {
+                          "id": "premium",
+                          "name": "Mocny zakres",
+                          "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                          "hands": [
+                            "AA",
+                            "KK",
+                            "QQ",
+                            "JJ",
+                            "TT"
+                          ]
+                        },
+                        "availableActions": [],
+                        "history": [
+                          {
+                            "id": "event_1",
+                            "street": "flop",
+                            "player": "hero",
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "id": "event_2",
+                            "street": "flop",
+                            "player": "opponent",
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "id": "event_3",
+                            "street": "turn",
+                            "player": "hero",
+                            "action": "bet",
+                            "amount": 50
+                          },
+                          {
+                            "id": "event_4",
+                            "street": "turn",
+                            "player": "opponent",
+                            "action": "call",
+                            "amount": 50
+                          },
+                          {
+                            "id": "event_5",
+                            "street": "river",
+                            "player": "hero",
+                            "action": "check",
+                            "amount": 0
+                          },
+                          {
+                            "id": "event_6",
+                            "street": "river",
+                            "player": "opponent",
+                            "action": "check",
+                            "amount": 0
+                          }
+                        ],
+                        "result": {
+                          "reason": "showdown",
+                          "winner": "hero",
+                          "opponentCards": [
+                            {
+                              "rank": 14,
+                              "suit": "c"
+                            },
+                            {
+                              "rank": 14,
+                              "suit": "d"
+                            }
+                          ],
+                          "heroPayout": 200,
+                          "opponentPayout": 0,
+                          "summary": "Poker królewski wygrywa pulę 200 żetonów."
+                        }
+                      },
+                      "analysis": {
+                        "street": "river",
+                        "action": "check",
+                        "equity": 1,
+                        "sampleCount": 0,
+                        "marginOfError": 0,
+                        "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+                      }
+                    }
+                  },
+                  "fold": {
+                    "value": {
+                      "hand": {
+                        "id": "hand_fold_002",
+                        "revision": 1,
+                        "street": "flop",
+                        "status": "completed",
+                        "heroCards": [
+                          {
+                            "rank": 14,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 13,
+                            "suit": "s"
+                          }
+                        ],
+                        "board": [
+                          {
+                            "rank": 12,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 11,
+                            "suit": "s"
+                          },
+                          {
+                            "rank": 10,
+                            "suit": "s"
+                          }
+                        ],
+                        "pot": 150,
+                        "heroStack": 950,
+                        "opponentStack": 1050,
+                        "toCall": 0,
+                        "opponentRange": {
+                          "id": "premium",
+                          "name": "Mocny zakres",
+                          "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                          "hands": [
+                            "AA",
+                            "KK",
+                            "QQ",
+                            "JJ",
+                            "TT"
+                          ]
+                        },
+                        "availableActions": [],
+                        "history": [
+                          {
+                            "id": "fold_event_1",
+                            "street": "flop",
+                            "player": "opponent",
+                            "action": "bet",
+                            "amount": 50
+                          },
+                          {
+                            "id": "fold_event_2",
+                            "street": "flop",
+                            "player": "hero",
+                            "action": "fold",
+                            "amount": 0
+                          }
+                        ],
+                        "result": {
+                          "reason": "fold",
+                          "winner": "opponent",
+                          "opponentCards": [],
+                          "heroPayout": 0,
+                          "opponentPayout": 150,
+                          "summary": "Pasujesz. Przeciwnik otrzymuje pulę 150 żetonów; jego karty pozostają ukryte."
+                        }
+                      },
+                      "analysis": {
+                        "street": "flop",
+                        "action": "fold",
+                        "equity": 1,
+                        "sampleCount": 0,
+                        "marginOfError": 0,
+                        "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii.",
+                        "requiredEquity": 0.25,
+                        "callEV": 150
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Niepoprawne żądanie JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "invalid_request",
+                      "message": "Niepoprawne żądanie JSON."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Wyślij żądanie jako application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "unsupported_media_type",
+                      "message": "Wyślij żądanie jako application/json."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "validation_error dla niepoprawnego payloadu, illegal_action dla ruchu spoza presetów. Nie zmieniają stanu.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "invalid": {
+                    "value": {
+                      "code": "validation_error",
+                      "message": "Nieprawidłowe pola żądania."
+                    }
+                  },
+                  "illegal": {
+                    "value": {
+                      "code": "illegal_action",
+                      "message": "Ten ruch nie jest dostępny w bieżącym rozdaniu."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Obliczenie chwilowo niedostępne. Ponów identyczne żądanie.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "simulation_unavailable",
+                      "message": "Obliczenie chwilowo niedostępne. Ponów identyczne żądanie."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Nie znaleziono rozdania. Rozpocznij nowe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "hand_not_found",
+                      "message": "Nie znaleziono rozdania. Rozpocznij nowe."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Rozdanie wygasło. Rozpocznij nowe.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "default": {
+                    "value": {
+                      "code": "hand_expired",
+                      "message": "Rozdanie wygasło. Rozpocznij nowe."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "stale_revision: zastąp rozdanie nowym. idempotency_conflict: błędne ponowne użycie klucza, nie wykonuj automatycznie innego ruchu. Idempotencję sprawdź PRZED rewizją.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIError"
+                },
+                "examples": {
+                  "staleRevision": {
+                    "value": {
+                      "code": "stale_revision",
+                      "message": "Stan rozdania zmienił się. Rozpocznij nowe."
+                    }
+                  },
+                  "idempotencyConflict": {
+                    "value": {
+                      "code": "idempotency_conflict",
+                      "message": "Ten requestId został już użyty dla innego żądania."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Card": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "suit"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 14,
+            "description": "2…10, walet=11, dama=12, król=13, as=14."
+          },
+          "suit": {
+            "type": "string",
+            "enum": [
+              "c",
+              "d",
+              "h",
+              "s"
+            ],
+            "description": "c=trefl, d=karo, h=kier, s=pik."
+          }
+        }
+      },
+      "HandClass": {
+        "type": "string",
+        "enum": [
+          "AA",
+          "AKs",
+          "AKo",
+          "AQs",
+          "AQo",
+          "AJs",
+          "AJo",
+          "ATs",
+          "ATo",
+          "A9s",
+          "A9o",
+          "A8s",
+          "A8o",
+          "A7s",
+          "A7o",
+          "A6s",
+          "A6o",
+          "A5s",
+          "A5o",
+          "A4s",
+          "A4o",
+          "A3s",
+          "A3o",
+          "A2s",
+          "A2o",
+          "KK",
+          "KQs",
+          "KQo",
+          "KJs",
+          "KJo",
+          "KTs",
+          "KTo",
+          "K9s",
+          "K9o",
+          "K8s",
+          "K8o",
+          "K7s",
+          "K7o",
+          "K6s",
+          "K6o",
+          "K5s",
+          "K5o",
+          "K4s",
+          "K4o",
+          "K3s",
+          "K3o",
+          "K2s",
+          "K2o",
+          "QQ",
+          "QJs",
+          "QJo",
+          "QTs",
+          "QTo",
+          "Q9s",
+          "Q9o",
+          "Q8s",
+          "Q8o",
+          "Q7s",
+          "Q7o",
+          "Q6s",
+          "Q6o",
+          "Q5s",
+          "Q5o",
+          "Q4s",
+          "Q4o",
+          "Q3s",
+          "Q3o",
+          "Q2s",
+          "Q2o",
+          "JJ",
+          "JTs",
+          "JTo",
+          "J9s",
+          "J9o",
+          "J8s",
+          "J8o",
+          "J7s",
+          "J7o",
+          "J6s",
+          "J6o",
+          "J5s",
+          "J5o",
+          "J4s",
+          "J4o",
+          "J3s",
+          "J3o",
+          "J2s",
+          "J2o",
+          "TT",
+          "T9s",
+          "T9o",
+          "T8s",
+          "T8o",
+          "T7s",
+          "T7o",
+          "T6s",
+          "T6o",
+          "T5s",
+          "T5o",
+          "T4s",
+          "T4o",
+          "T3s",
+          "T3o",
+          "T2s",
+          "T2o",
+          "99",
+          "98s",
+          "98o",
+          "97s",
+          "97o",
+          "96s",
+          "96o",
+          "95s",
+          "95o",
+          "94s",
+          "94o",
+          "93s",
+          "93o",
+          "92s",
+          "92o",
+          "88",
+          "87s",
+          "87o",
+          "86s",
+          "86o",
+          "85s",
+          "85o",
+          "84s",
+          "84o",
+          "83s",
+          "83o",
+          "82s",
+          "82o",
+          "77",
+          "76s",
+          "76o",
+          "75s",
+          "75o",
+          "74s",
+          "74o",
+          "73s",
+          "73o",
+          "72s",
+          "72o",
+          "66",
+          "65s",
+          "65o",
+          "64s",
+          "64o",
+          "63s",
+          "63o",
+          "62s",
+          "62o",
+          "55",
+          "54s",
+          "54o",
+          "53s",
+          "53o",
+          "52s",
+          "52o",
+          "44",
+          "43s",
+          "43o",
+          "42s",
+          "42o",
+          "33",
+          "32s",
+          "32o",
+          "22"
+        ],
+        "description": "Jedna z 169 kanonicznych klas Hold’em. Para: AA. Różne rangi w kolejności od wyższej do niższej: AKs (ten sam kolor), AKo (różne kolory). T oznacza dziesiątkę. Skróty zakresów takie jak QQ+, AK, A5s-A2s i powtórzenia są niedozwolone."
+      },
+      "OpponentRange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "hands"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "Krótka polska nazwa zakresu."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Polski opis założenia, widoczny przed decyzją; nie zdradza equity ani oceny."
+          },
+          "hands": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 169,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/HandClass"
+            },
+            "description": "Pełna lista klas. Każdą należy rozwinąć na konkretne kombinacje, usunąć kombinacje zawierające widoczne karty, a pozostałym nadać równe wagi. Po usunięciu blokowanych kombinacji musi pozostać co najmniej jedna."
+          }
+        }
+      },
+      "Identifier": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[A-Za-z0-9_-]+$"
+      },
+      "HandStreet": {
+        "type": "string",
+        "enum": [
+          "flop",
+          "turn",
+          "river",
+          "showdown"
+        ]
+      },
+      "HandAction": {
+        "type": "string",
+        "enum": [
+          "fold",
+          "check",
+          "call",
+          "bet",
+          "raise"
+        ]
+      },
+      "HandPlayer": {
+        "type": "string",
+        "enum": [
+          "hero",
+          "opponent"
+        ]
+      },
+      "HandStatus": {
+        "type": "string",
+        "enum": [
+          "awaitingAction",
+          "completed"
+        ]
+      },
+      "HandWinner": {
+        "type": "string",
+        "enum": [
+          "hero",
+          "opponent",
+          "tie"
+        ]
+      },
+      "HandEndReason": {
+        "type": "string",
+        "enum": [
+          "fold",
+          "showdown"
+        ]
+      },
+      "CreateHandRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requestId"
+        ],
+        "properties": {
+          "requestId": {
+            "$ref": "#/components/schemas/Identifier",
+            "description": "Identyfikator operacji utworzony przez klienta. Powtórz identyczny requestId przy timeout, anulowaniu lub utracie odpowiedzi. Nowy identyfikator oznacza nowe rozdanie."
+          }
+        }
+      },
+      "HandActionOption": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "amount"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/HandAction"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "Dodatkowe żetony wpłacane TERAZ. Check/fold: 0. Call: toCall. Bet: stawka. Raise: cała dopłata, łącznie z częścią call; nie sam rozmiar podbicia i nie łączny wkład z poprzednich ulic."
+          }
+        },
+        "description": "Backend ogłasza komplet dostępnych przycisków. Żądanie musi dokładnie pasować do jednej pary action/amount; klient nie wylicza legalności samodzielnie."
+      },
+      "HandHistoryEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "street",
+          "player",
+          "action",
+          "amount"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "street": {
+            "$ref": "#/components/schemas/HandStreet"
+          },
+          "player": {
+            "$ref": "#/components/schemas/HandPlayer"
+          },
+          "action": {
+            "$ref": "#/components/schemas/HandAction"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "Żetony wpłacone przez tego gracza w tej konkretnej akcji. Check/fold mają 0."
+          }
+        }
+      },
+      "HandResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "reason",
+          "winner",
+          "opponentCards",
+          "heroPayout",
+          "opponentPayout",
+          "summary"
+        ],
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/HandEndReason"
+          },
+          "winner": {
+            "$ref": "#/components/schemas/HandWinner"
+          },
+          "opponentCards": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 2,
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            },
+            "uniqueItems": true,
+            "description": "Dokładnie dwie różne karty wyłącznie przy showdown. Po fold tablica musi być pusta."
+          },
+          "heroPayout": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "opponentPayout": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Polski opis rzeczywistego zakończenia rozdania; wynik pojedynczego rozdania nie jest oceną jakości decyzji."
+          }
+        }
+      },
+      "PokerHand": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "revision",
+          "street",
+          "status",
+          "heroCards",
+          "board",
+          "pot",
+          "heroStack",
+          "opponentStack",
+          "toCall",
+          "opponentRange",
+          "availableActions",
+          "history"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "street": {
+            "$ref": "#/components/schemas/HandStreet"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HandStatus"
+          },
+          "heroCards": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            },
+            "uniqueItems": true
+          },
+          "board": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            },
+            "uniqueItems": true
+          },
+          "pot": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "heroStack": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "opponentStack": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "toCall": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "opponentRange": {
+            "$ref": "#/components/schemas/OpponentRange"
+          },
+          "availableActions": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/HandActionOption"
+            },
+            "uniqueItems": true
+          },
+          "history": {
+            "type": "array",
+            "minItems": 0,
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/HandHistoryEntry"
+            }
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HandResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Autorytatywny stan po wszystkich automatycznych akcjach rywala. AwaitingAction: akcja należy do hero; result pominięty lub null, dostępne co najmniej 1 legalne działanie. Completed: result wymagany i nie-null, toCall=0, availableActions=[]. Flop ma 3 karty stołu, turn 4, river/showdown 5. Wszystkie widoczne karty są unikalne. Completed po fold pozostawia ostatnią ulicę; showdown używa street=showdown. Podczas gry pot+heroStack+opponentStack jest stałe. Po zakończeniu stosy zawierają już wypłaty; pot pozostaje historyczną wysokością rozliczonej puli i NIE dodaje się go ponownie do sumy stosów. heroPayout+opponentPayout=pot. Przy remisie resztę pojedynczego żetonu otrzymuje hero. Historia ma unikalne id i tylko rośnie; wcześniejsze wpisy nie mogą się zmienić.",
+        "examples": [
+          {
+            "id": "hand_royal_001",
+            "revision": 0,
+            "street": "flop",
+            "status": "awaitingAction",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              }
+            ],
+            "pot": 100,
+            "heroStack": 950,
+            "opponentStack": 950,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [
+              {
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "action": "bet",
+                "amount": 100
+              }
+            ],
+            "history": []
+          },
+          {
+            "id": "hand_royal_001",
+            "revision": 1,
+            "street": "turn",
+            "status": "awaitingAction",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              },
+              {
+                "rank": 2,
+                "suit": "d"
+              }
+            ],
+            "pot": 100,
+            "heroStack": 950,
+            "opponentStack": 950,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [
+              {
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "action": "bet",
+                "amount": 100
+              }
+            ],
+            "history": [
+              {
+                "id": "event_1",
+                "street": "flop",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_2",
+                "street": "flop",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              }
+            ]
+          },
+          {
+            "id": "hand_royal_001",
+            "revision": 2,
+            "street": "river",
+            "status": "awaitingAction",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              },
+              {
+                "rank": 2,
+                "suit": "d"
+              },
+              {
+                "rank": 7,
+                "suit": "c"
+              }
+            ],
+            "pot": 200,
+            "heroStack": 900,
+            "opponentStack": 900,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [
+              {
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "action": "bet",
+                "amount": 100
+              },
+              {
+                "action": "bet",
+                "amount": 200
+              }
+            ],
+            "history": [
+              {
+                "id": "event_1",
+                "street": "flop",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_2",
+                "street": "flop",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_3",
+                "street": "turn",
+                "player": "hero",
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "id": "event_4",
+                "street": "turn",
+                "player": "opponent",
+                "action": "call",
+                "amount": 50
+              }
+            ]
+          },
+          {
+            "id": "hand_royal_001",
+            "revision": 3,
+            "street": "showdown",
+            "status": "completed",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              },
+              {
+                "rank": 2,
+                "suit": "d"
+              },
+              {
+                "rank": 7,
+                "suit": "c"
+              }
+            ],
+            "pot": 200,
+            "heroStack": 1100,
+            "opponentStack": 900,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [],
+            "history": [
+              {
+                "id": "event_1",
+                "street": "flop",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_2",
+                "street": "flop",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_3",
+                "street": "turn",
+                "player": "hero",
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "id": "event_4",
+                "street": "turn",
+                "player": "opponent",
+                "action": "call",
+                "amount": 50
+              },
+              {
+                "id": "event_5",
+                "street": "river",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_6",
+                "street": "river",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              }
+            ],
+            "result": {
+              "reason": "showdown",
+              "winner": "hero",
+              "opponentCards": [
+                {
+                  "rank": 14,
+                  "suit": "c"
+                },
+                {
+                  "rank": 14,
+                  "suit": "d"
+                }
+              ],
+              "heroPayout": 200,
+              "opponentPayout": 0,
+              "summary": "Poker królewski wygrywa pulę 200 żetonów."
+            }
+          },
+          {
+            "id": "hand_fold_002",
+            "revision": 0,
+            "street": "flop",
+            "status": "awaitingAction",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              }
+            ],
+            "pot": 150,
+            "heroStack": 950,
+            "opponentStack": 900,
+            "toCall": 50,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [
+              {
+                "action": "fold",
+                "amount": 0
+              },
+              {
+                "action": "call",
+                "amount": 50
+              },
+              {
+                "action": "raise",
+                "amount": 150
+              }
+            ],
+            "history": [
+              {
+                "id": "fold_event_1",
+                "street": "flop",
+                "player": "opponent",
+                "action": "bet",
+                "amount": 50
+              }
+            ]
+          },
+          {
+            "id": "hand_fold_002",
+            "revision": 1,
+            "street": "flop",
+            "status": "completed",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              }
+            ],
+            "pot": 150,
+            "heroStack": 950,
+            "opponentStack": 1050,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [],
+            "history": [
+              {
+                "id": "fold_event_1",
+                "street": "flop",
+                "player": "opponent",
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "id": "fold_event_2",
+                "street": "flop",
+                "player": "hero",
+                "action": "fold",
+                "amount": 0
+              }
+            ],
+            "result": {
+              "reason": "fold",
+              "winner": "opponent",
+              "opponentCards": [],
+              "heroPayout": 0,
+              "opponentPayout": 150,
+              "summary": "Pasujesz. Przeciwnik otrzymuje pulę 150 żetonów; jego karty pozostają ukryte."
+            }
+          }
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "completed"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "result"
+              ],
+              "properties": {
+                "result": {
+                  "$ref": "#/components/schemas/HandResult"
+                },
+                "toCall": {
+                  "const": 0
+                },
+                "availableActions": {
+                  "maxItems": 0
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "result": {
+                  "type": "null"
+                },
+                "availableActions": {
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        ]
+      },
+      "HandAnalysis": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "street",
+          "action",
+          "equity",
+          "sampleCount",
+          "marginOfError",
+          "explanation"
+        ],
+        "properties": {
+          "street": {
+            "$ref": "#/components/schemas/HandStreet"
+          },
+          "action": {
+            "$ref": "#/components/schemas/HandAction"
+          },
+          "equity": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "requiredEquity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "format": "double",
+                "minimum": 0,
+                "maximum": 0.5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "callEV": {
+            "anyOf": [
+              {
+                "type": "number",
+                "format": "double",
+                "minimum": -1000000,
+                "maximum": 1000000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sampleCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "marginOfError": {
+            "type": "number",
+            "format": "double",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "description": "Analiza publicznego stanu SPRZED wybranej akcji. street i action odpowiadają żądaniu i poprzedniemu stanowi. Equity=P(wygrana)+0.5*P(remis), względem jawnego zakresu po blockerach; żadnego dostępu do faktycznej ukrytej ręki ani nowo odkrytych kart stołu. Gdy poprzednie toCall>0, requiredEquity=toCall/(pot+toCall), callEV=equity*(pot+toCall)-toCall. Gdy toCall=0 oba pola są pominięte lub null. To wyłącznie hipotetyczny benchmark call-vs-fold przy braku późniejszych kosztów: przy dalszej licytacji nie jest pełnym EV strategii, rekomendacją GTO ani oceną bet/raise. Nie oceniać ruchu po wyniku runoutu. sampleCount=0 oznacza pełną enumerację i marginOfError=0; inaczej niezależne próby Monte Carlo i konserwatywny dwustronny margines 95% równy min(1,sqrt(ln(40)/(2*sampleCount))) (tolerancja klienta 1e-6). Wszystkie liczby muszą być skończone.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "sampleCount": {
+                  "const": 0
+                }
+              },
+              "required": [
+                "sampleCount"
+              ]
+            },
+            "then": {
+              "properties": {
+                "marginOfError": {
+                  "const": 0
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "marginOfError": {
+                  "exclusiveMinimum": 0
+                }
+              }
+            }
+          }
+        ]
+      },
+      "HandActionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requestId",
+          "expectedRevision",
+          "action",
+          "amount"
+        ],
+        "properties": {
+          "requestId": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "action": {
+            "$ref": "#/components/schemas/HandAction"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "description": "Wszystkie pola są wymagane, nie-null. expectedRevision to revision stanu, na którym użytkownik wybrał ruch. action/amount muszą być jednym z dostępnych presetów. Przy ponowieniu po niepewnym wyniku użyj identycznych pól, w tym starego expectedRevision. Nie twórz nowego requestId dla retry.",
+        "examples": [
+          {
+            "requestId": "request_action_1",
+            "expectedRevision": 0,
+            "action": "check",
+            "amount": 0
+          },
+          {
+            "requestId": "request_action_2",
+            "expectedRevision": 1,
+            "action": "bet",
+            "amount": 50
+          },
+          {
+            "requestId": "request_action_3",
+            "expectedRevision": 2,
+            "action": "check",
+            "amount": 0
+          },
+          {
+            "requestId": "request_fold_1",
+            "expectedRevision": 0,
+            "action": "fold",
+            "amount": 0
+          }
+        ]
+      },
+      "HandActionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "hand",
+          "analysis"
+        ],
+        "properties": {
+          "hand": {
+            "$ref": "#/components/schemas/PokerHand"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/HandAnalysis"
+          }
+        },
+        "description": "Jeden atomowy wynik: publiczny stan po akcji hero i automatycznej reakcji rywala oraz analiza sprzed akcji. Id rozdania, heroCards i opponentRange pozostają stałe, board i history mają poprzedni stan jako prefiks. revision rośnie co najmniej o 1. Historia dopisuje wybraną akcję hero i ewentualne akcje rywala. Nie ma samodzielnego endpointu advancing-street: call/check/bet/raise i odpowiedź rywala prowadzą do następnej ulicy albo zakończenia.",
+        "examples": [
+          {
+            "hand": {
+              "id": "hand_royal_001",
+              "revision": 1,
+              "street": "turn",
+              "status": "awaitingAction",
+              "heroCards": [
+                {
+                  "rank": 14,
+                  "suit": "s"
+                },
+                {
+                  "rank": 13,
+                  "suit": "s"
+                }
+              ],
+              "board": [
+                {
+                  "rank": 12,
+                  "suit": "s"
+                },
+                {
+                  "rank": 11,
+                  "suit": "s"
+                },
+                {
+                  "rank": 10,
+                  "suit": "s"
+                },
+                {
+                  "rank": 2,
+                  "suit": "d"
+                }
+              ],
+              "pot": 100,
+              "heroStack": 950,
+              "opponentStack": 950,
+              "toCall": 0,
+              "opponentRange": {
+                "id": "premium",
+                "name": "Mocny zakres",
+                "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                "hands": [
+                  "AA",
+                  "KK",
+                  "QQ",
+                  "JJ",
+                  "TT"
+                ]
+              },
+              "availableActions": [
+                {
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "action": "bet",
+                  "amount": 50
+                },
+                {
+                  "action": "bet",
+                  "amount": 100
+                }
+              ],
+              "history": [
+                {
+                  "id": "event_1",
+                  "street": "flop",
+                  "player": "hero",
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "id": "event_2",
+                  "street": "flop",
+                  "player": "opponent",
+                  "action": "check",
+                  "amount": 0
+                }
+              ]
+            },
+            "analysis": {
+              "street": "flop",
+              "action": "check",
+              "equity": 1,
+              "sampleCount": 0,
+              "marginOfError": 0,
+              "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+            }
+          },
+          {
+            "hand": {
+              "id": "hand_royal_001",
+              "revision": 2,
+              "street": "river",
+              "status": "awaitingAction",
+              "heroCards": [
+                {
+                  "rank": 14,
+                  "suit": "s"
+                },
+                {
+                  "rank": 13,
+                  "suit": "s"
+                }
+              ],
+              "board": [
+                {
+                  "rank": 12,
+                  "suit": "s"
+                },
+                {
+                  "rank": 11,
+                  "suit": "s"
+                },
+                {
+                  "rank": 10,
+                  "suit": "s"
+                },
+                {
+                  "rank": 2,
+                  "suit": "d"
+                },
+                {
+                  "rank": 7,
+                  "suit": "c"
+                }
+              ],
+              "pot": 200,
+              "heroStack": 900,
+              "opponentStack": 900,
+              "toCall": 0,
+              "opponentRange": {
+                "id": "premium",
+                "name": "Mocny zakres",
+                "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                "hands": [
+                  "AA",
+                  "KK",
+                  "QQ",
+                  "JJ",
+                  "TT"
+                ]
+              },
+              "availableActions": [
+                {
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "action": "bet",
+                  "amount": 100
+                },
+                {
+                  "action": "bet",
+                  "amount": 200
+                }
+              ],
+              "history": [
+                {
+                  "id": "event_1",
+                  "street": "flop",
+                  "player": "hero",
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "id": "event_2",
+                  "street": "flop",
+                  "player": "opponent",
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "id": "event_3",
+                  "street": "turn",
+                  "player": "hero",
+                  "action": "bet",
+                  "amount": 50
+                },
+                {
+                  "id": "event_4",
+                  "street": "turn",
+                  "player": "opponent",
+                  "action": "call",
+                  "amount": 50
+                }
+              ]
+            },
+            "analysis": {
+              "street": "turn",
+              "action": "bet",
+              "equity": 1,
+              "sampleCount": 0,
+              "marginOfError": 0,
+              "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+            }
+          },
+          {
+            "hand": {
+              "id": "hand_royal_001",
+              "revision": 3,
+              "street": "showdown",
+              "status": "completed",
+              "heroCards": [
+                {
+                  "rank": 14,
+                  "suit": "s"
+                },
+                {
+                  "rank": 13,
+                  "suit": "s"
+                }
+              ],
+              "board": [
+                {
+                  "rank": 12,
+                  "suit": "s"
+                },
+                {
+                  "rank": 11,
+                  "suit": "s"
+                },
+                {
+                  "rank": 10,
+                  "suit": "s"
+                },
+                {
+                  "rank": 2,
+                  "suit": "d"
+                },
+                {
+                  "rank": 7,
+                  "suit": "c"
+                }
+              ],
+              "pot": 200,
+              "heroStack": 1100,
+              "opponentStack": 900,
+              "toCall": 0,
+              "opponentRange": {
+                "id": "premium",
+                "name": "Mocny zakres",
+                "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                "hands": [
+                  "AA",
+                  "KK",
+                  "QQ",
+                  "JJ",
+                  "TT"
+                ]
+              },
+              "availableActions": [],
+              "history": [
+                {
+                  "id": "event_1",
+                  "street": "flop",
+                  "player": "hero",
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "id": "event_2",
+                  "street": "flop",
+                  "player": "opponent",
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "id": "event_3",
+                  "street": "turn",
+                  "player": "hero",
+                  "action": "bet",
+                  "amount": 50
+                },
+                {
+                  "id": "event_4",
+                  "street": "turn",
+                  "player": "opponent",
+                  "action": "call",
+                  "amount": 50
+                },
+                {
+                  "id": "event_5",
+                  "street": "river",
+                  "player": "hero",
+                  "action": "check",
+                  "amount": 0
+                },
+                {
+                  "id": "event_6",
+                  "street": "river",
+                  "player": "opponent",
+                  "action": "check",
+                  "amount": 0
+                }
+              ],
+              "result": {
+                "reason": "showdown",
+                "winner": "hero",
+                "opponentCards": [
+                  {
+                    "rank": 14,
+                    "suit": "c"
+                  },
+                  {
+                    "rank": 14,
+                    "suit": "d"
+                  }
+                ],
+                "heroPayout": 200,
+                "opponentPayout": 0,
+                "summary": "Poker królewski wygrywa pulę 200 żetonów."
+              }
+            },
+            "analysis": {
+              "street": "river",
+              "action": "check",
+              "equity": 1,
+              "sampleCount": 0,
+              "marginOfError": 0,
+              "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+            }
+          },
+          {
+            "hand": {
+              "id": "hand_fold_002",
+              "revision": 1,
+              "street": "flop",
+              "status": "completed",
+              "heroCards": [
+                {
+                  "rank": 14,
+                  "suit": "s"
+                },
+                {
+                  "rank": 13,
+                  "suit": "s"
+                }
+              ],
+              "board": [
+                {
+                  "rank": 12,
+                  "suit": "s"
+                },
+                {
+                  "rank": 11,
+                  "suit": "s"
+                },
+                {
+                  "rank": 10,
+                  "suit": "s"
+                }
+              ],
+              "pot": 150,
+              "heroStack": 950,
+              "opponentStack": 1050,
+              "toCall": 0,
+              "opponentRange": {
+                "id": "premium",
+                "name": "Mocny zakres",
+                "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+                "hands": [
+                  "AA",
+                  "KK",
+                  "QQ",
+                  "JJ",
+                  "TT"
+                ]
+              },
+              "availableActions": [],
+              "history": [
+                {
+                  "id": "fold_event_1",
+                  "street": "flop",
+                  "player": "opponent",
+                  "action": "bet",
+                  "amount": 50
+                },
+                {
+                  "id": "fold_event_2",
+                  "street": "flop",
+                  "player": "hero",
+                  "action": "fold",
+                  "amount": 0
+                }
+              ],
+              "result": {
+                "reason": "fold",
+                "winner": "opponent",
+                "opponentCards": [],
+                "heroPayout": 0,
+                "opponentPayout": 150,
+                "summary": "Pasujesz. Przeciwnik otrzymuje pulę 150 żetonów; jego karty pozostają ukryte."
+              }
+            },
+            "analysis": {
+              "street": "flop",
+              "action": "fold",
+              "equity": 1,
+              "sampleCount": 0,
+              "marginOfError": 0,
+              "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii.",
+              "requiredEquity": 0.25,
+              "callEV": 150
+            }
+          }
+        ]
+      },
+      "APIError": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "validation_error",
+              "unsupported_media_type",
+              "hand_not_found",
+              "hand_expired",
+              "stale_revision",
+              "idempotency_conflict",
+              "illegal_action",
+              "simulation_unavailable"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "Bezpieczny polski komunikat dla użytkownika, bez szczegółów wewnętrznych."
+          }
+        }
+      }
+    }
+  },
+  "x-example-sequence": [
+    {
+      "request": {
+        "method": "POST",
+        "path": "/v2/hands",
+        "body": {
+          "requestId": "request_create_1"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "hand_royal_001",
+          "revision": 0,
+          "street": "flop",
+          "status": "awaitingAction",
+          "heroCards": [
+            {
+              "rank": 14,
+              "suit": "s"
+            },
+            {
+              "rank": 13,
+              "suit": "s"
+            }
+          ],
+          "board": [
+            {
+              "rank": 12,
+              "suit": "s"
+            },
+            {
+              "rank": 11,
+              "suit": "s"
+            },
+            {
+              "rank": 10,
+              "suit": "s"
+            }
+          ],
+          "pot": 100,
+          "heroStack": 950,
+          "opponentStack": 950,
+          "toCall": 0,
+          "opponentRange": {
+            "id": "premium",
+            "name": "Mocny zakres",
+            "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+            "hands": [
+              "AA",
+              "KK",
+              "QQ",
+              "JJ",
+              "TT"
+            ]
+          },
+          "availableActions": [
+            {
+              "action": "check",
+              "amount": 0
+            },
+            {
+              "action": "bet",
+              "amount": 50
+            },
+            {
+              "action": "bet",
+              "amount": 100
+            }
+          ],
+          "history": []
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/v2/hands/hand_royal_001/actions",
+        "body": {
+          "requestId": "request_action_1",
+          "expectedRevision": 0,
+          "action": "check",
+          "amount": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "hand": {
+            "id": "hand_royal_001",
+            "revision": 1,
+            "street": "turn",
+            "status": "awaitingAction",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              },
+              {
+                "rank": 2,
+                "suit": "d"
+              }
+            ],
+            "pot": 100,
+            "heroStack": 950,
+            "opponentStack": 950,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [
+              {
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "action": "bet",
+                "amount": 100
+              }
+            ],
+            "history": [
+              {
+                "id": "event_1",
+                "street": "flop",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_2",
+                "street": "flop",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              }
+            ]
+          },
+          "analysis": {
+            "street": "flop",
+            "action": "check",
+            "equity": 1,
+            "sampleCount": 0,
+            "marginOfError": 0,
+            "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+          }
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/v2/hands/hand_royal_001/actions",
+        "body": {
+          "requestId": "request_action_2",
+          "expectedRevision": 1,
+          "action": "bet",
+          "amount": 50
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "hand": {
+            "id": "hand_royal_001",
+            "revision": 2,
+            "street": "river",
+            "status": "awaitingAction",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              },
+              {
+                "rank": 2,
+                "suit": "d"
+              },
+              {
+                "rank": 7,
+                "suit": "c"
+              }
+            ],
+            "pot": 200,
+            "heroStack": 900,
+            "opponentStack": 900,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [
+              {
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "action": "bet",
+                "amount": 100
+              },
+              {
+                "action": "bet",
+                "amount": 200
+              }
+            ],
+            "history": [
+              {
+                "id": "event_1",
+                "street": "flop",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_2",
+                "street": "flop",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_3",
+                "street": "turn",
+                "player": "hero",
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "id": "event_4",
+                "street": "turn",
+                "player": "opponent",
+                "action": "call",
+                "amount": 50
+              }
+            ]
+          },
+          "analysis": {
+            "street": "turn",
+            "action": "bet",
+            "equity": 1,
+            "sampleCount": 0,
+            "marginOfError": 0,
+            "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+          }
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/v2/hands/hand_royal_001/actions",
+        "body": {
+          "requestId": "request_action_3",
+          "expectedRevision": 2,
+          "action": "check",
+          "amount": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "hand": {
+            "id": "hand_royal_001",
+            "revision": 3,
+            "street": "showdown",
+            "status": "completed",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              },
+              {
+                "rank": 2,
+                "suit": "d"
+              },
+              {
+                "rank": 7,
+                "suit": "c"
+              }
+            ],
+            "pot": 200,
+            "heroStack": 1100,
+            "opponentStack": 900,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [],
+            "history": [
+              {
+                "id": "event_1",
+                "street": "flop",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_2",
+                "street": "flop",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_3",
+                "street": "turn",
+                "player": "hero",
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "id": "event_4",
+                "street": "turn",
+                "player": "opponent",
+                "action": "call",
+                "amount": 50
+              },
+              {
+                "id": "event_5",
+                "street": "river",
+                "player": "hero",
+                "action": "check",
+                "amount": 0
+              },
+              {
+                "id": "event_6",
+                "street": "river",
+                "player": "opponent",
+                "action": "check",
+                "amount": 0
+              }
+            ],
+            "result": {
+              "reason": "showdown",
+              "winner": "hero",
+              "opponentCards": [
+                {
+                  "rank": 14,
+                  "suit": "c"
+                },
+                {
+                  "rank": 14,
+                  "suit": "d"
+                }
+              ],
+              "heroPayout": 200,
+              "opponentPayout": 0,
+              "summary": "Poker królewski wygrywa pulę 200 żetonów."
+            }
+          },
+          "analysis": {
+            "street": "river",
+            "action": "check",
+            "equity": 1,
+            "sampleCount": 0,
+            "marginOfError": 0,
+            "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii."
+          }
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/v2/hands",
+        "body": {
+          "requestId": "request_create_2"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "hand_fold_002",
+          "revision": 0,
+          "street": "flop",
+          "status": "awaitingAction",
+          "heroCards": [
+            {
+              "rank": 14,
+              "suit": "s"
+            },
+            {
+              "rank": 13,
+              "suit": "s"
+            }
+          ],
+          "board": [
+            {
+              "rank": 12,
+              "suit": "s"
+            },
+            {
+              "rank": 11,
+              "suit": "s"
+            },
+            {
+              "rank": 10,
+              "suit": "s"
+            }
+          ],
+          "pot": 150,
+          "heroStack": 950,
+          "opponentStack": 900,
+          "toCall": 50,
+          "opponentRange": {
+            "id": "premium",
+            "name": "Mocny zakres",
+            "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+            "hands": [
+              "AA",
+              "KK",
+              "QQ",
+              "JJ",
+              "TT"
+            ]
+          },
+          "availableActions": [
+            {
+              "action": "fold",
+              "amount": 0
+            },
+            {
+              "action": "call",
+              "amount": 50
+            },
+            {
+              "action": "raise",
+              "amount": 150
+            }
+          ],
+          "history": [
+            {
+              "id": "fold_event_1",
+              "street": "flop",
+              "player": "opponent",
+              "action": "bet",
+              "amount": 50
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/v2/hands/hand_fold_002/actions",
+        "body": {
+          "requestId": "request_fold_1",
+          "expectedRevision": 0,
+          "action": "fold",
+          "amount": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "hand": {
+            "id": "hand_fold_002",
+            "revision": 1,
+            "street": "flop",
+            "status": "completed",
+            "heroCards": [
+              {
+                "rank": 14,
+                "suit": "s"
+              },
+              {
+                "rank": 13,
+                "suit": "s"
+              }
+            ],
+            "board": [
+              {
+                "rank": 12,
+                "suit": "s"
+              },
+              {
+                "rank": 11,
+                "suit": "s"
+              },
+              {
+                "rank": 10,
+                "suit": "s"
+              }
+            ],
+            "pot": 150,
+            "heroStack": 950,
+            "opponentStack": 1050,
+            "toCall": 0,
+            "opponentRange": {
+              "id": "premium",
+              "name": "Mocny zakres",
+              "description": "Zakładamy wysokie pary. Każda legalna konkretna kombinacja jest jednakowo prawdopodobna.",
+              "hands": [
+                "AA",
+                "KK",
+                "QQ",
+                "JJ",
+                "TT"
+              ]
+            },
+            "availableActions": [],
+            "history": [
+              {
+                "id": "fold_event_1",
+                "street": "flop",
+                "player": "opponent",
+                "action": "bet",
+                "amount": 50
+              },
+              {
+                "id": "fold_event_2",
+                "street": "flop",
+                "player": "hero",
+                "action": "fold",
+                "amount": 0
+              }
+            ],
+            "result": {
+              "reason": "fold",
+              "winner": "opponent",
+              "opponentCards": [],
+              "heroPayout": 0,
+              "opponentPayout": 150,
+              "summary": "Pasujesz. Przeciwnik otrzymuje pulę 150 żetonów; jego karty pozostają ukryte."
+            }
+          },
+          "analysis": {
+            "street": "flop",
+            "action": "fold",
+            "equity": 1,
+            "sampleCount": 0,
+            "marginOfError": 0,
+            "explanation": "Przed ruchem masz pokera królewskiego i 100% udziału w puli przeciw podanemu zakresowi. Ten pomiar opisuje karty i cenę bieżącego sprawdzenia; nie jest rekomendacją GTO ani oceną całej strategii.",
+            "requiredEquity": 0.25,
+            "callEV": 150
+          }
+        }
+      }
+    }
+  ]
+}

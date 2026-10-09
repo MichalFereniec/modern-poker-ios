@@ -1,0 +1,1982 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Poker Tutor Full API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/sessions": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "List Sessions",
+        "operationId": "listSessions",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionResponse"
+                  },
+                  "title": "Response Listsessions"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Create Session",
+        "operationId": "createSession",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "Relative URI of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Get Session",
+        "operationId": "getSession",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Delete Session",
+        "operationId": "deleteSession",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/end": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "End Session",
+        "operationId": "endSession",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/hands": {
+      "post": {
+        "tags": [
+          "Hands"
+        ],
+        "summary": "Create Hand",
+        "operationId": "createHand",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandResponse"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "description": "Relative URI of the created resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/hands/{hand_id}": {
+      "get": {
+        "tags": [
+          "Hands"
+        ],
+        "summary": "Get Hand",
+        "operationId": "getHand",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "hand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Hand Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/hands/{hand_id}/replay": {
+      "get": {
+        "tags": [
+          "Replay"
+        ],
+        "summary": "Replay",
+        "operationId": "getReplay",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "hand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Hand Id"
+            }
+          },
+          {
+            "name": "step",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Step"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/hands/{hand_id}/actions": {
+      "post": {
+        "tags": [
+          "Decisions"
+        ],
+        "summary": "Submit Action",
+        "operationId": "submitAction",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "hand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Hand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/hands/{hand_id}/continue": {
+      "post": {
+        "tags": [
+          "Decisions"
+        ],
+        "summary": "Continue Hand",
+        "operationId": "continueHand",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "hand_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Hand Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContinueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HandResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "APIErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "validation_error",
+              "unsupported_media_type",
+              "session_not_found",
+              "hand_not_found",
+              "active_session_exists",
+              "active_hand_exists",
+              "session_ended",
+              "session_active",
+              "hand_not_active",
+              "stale_street",
+              "invalid_stage",
+              "replay_step_out_of_range",
+              "insufficient_chips",
+              "simulation_unavailable",
+              "creation_request_replayed"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "APIErrorResponse"
+      },
+      "ActionEVs": {
+        "properties": {
+          "check": {
+            "type": "number",
+            "maximum": 4000000000.0,
+            "minimum": -4000000000.0,
+            "title": "Check"
+          },
+          "bet": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 4000000000.0,
+                "minimum": -4000000000.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bet"
+          },
+          "fold": {
+            "type": "number",
+            "maximum": 0.0,
+            "minimum": 0.0,
+            "title": "Fold"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "check",
+          "bet",
+          "fold"
+        ],
+        "title": "ActionEVs"
+      },
+      "ActionRequest": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "check",
+              "bet",
+              "fold"
+            ],
+            "title": "Action"
+          },
+          "street": {
+            "type": "string",
+            "enum": [
+              "flop",
+              "turn",
+              "river"
+            ],
+            "title": "Street"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "street"
+        ],
+        "title": "ActionRequest"
+      },
+      "ContinueRequest": {
+        "properties": {
+          "street": {
+            "type": "string",
+            "enum": [
+              "flop",
+              "turn",
+              "river"
+            ],
+            "title": "Street"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "street"
+        ],
+        "title": "ContinueRequest"
+      },
+      "EmptyRequest": {
+        "properties": {},
+        "additionalProperties": false,
+        "type": "object",
+        "title": "EmptyRequest"
+      },
+      "FeedbackResponse": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "check",
+              "bet",
+              "fold"
+            ],
+            "title": "Action"
+          },
+          "street": {
+            "type": "string",
+            "enum": [
+              "flop",
+              "turn",
+              "river"
+            ],
+            "title": "Street"
+          },
+          "decision_board": {
+            "items": {
+              "type": "string",
+              "pattern": "^[2-9TJQKA][cdhs]$"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 3,
+            "title": "Decision Board"
+          },
+          "pot_before_action": {
+            "type": "integer",
+            "maximum": 4000000000.0,
+            "minimum": 1.0,
+            "title": "Pot Before Action"
+          },
+          "stacks_before_action": {
+            "items": {
+              "type": "number",
+              "maximum": 4000000000.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Stacks Before Action"
+          },
+          "available_actions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "check",
+                "bet",
+                "fold"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 2,
+            "title": "Available Actions"
+          },
+          "bet_amount": {
+            "type": "integer",
+            "const": 10,
+            "title": "Bet Amount"
+          },
+          "analysis_policy": {
+            "type": "string",
+            "const": "check_down",
+            "title": "Analysis Policy"
+          },
+          "opponent_policy": {
+            "type": "string",
+            "const": "check_or_call",
+            "title": "Opponent Policy"
+          },
+          "simulation_method": {
+            "type": "string",
+            "enum": [
+              "monte_carlo",
+              "exact"
+            ],
+            "title": "Simulation Method"
+          },
+          "sample_count": {
+            "type": "integer",
+            "enum": [
+              0,
+              10000
+            ],
+            "title": "Sample Count"
+          },
+          "confidence_level": {
+            "type": "number",
+            "maximum": 0.95,
+            "minimum": 0.95,
+            "title": "Confidence Level"
+          },
+          "outcome_probabilities": {
+            "$ref": "#/components/schemas/OutcomeProbabilities"
+          },
+          "outright_win_probability": {
+            "$ref": "#/components/schemas/WinProbability"
+          },
+          "equity": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Equity"
+          },
+          "margin_of_error": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Margin Of Error"
+          },
+          "equity_confidence_interval": {
+            "items": {
+              "type": "number",
+              "maximum": 1.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Equity Confidence Interval"
+          },
+          "required_equity": {
+            "type": "number",
+            "maximum": 0.25,
+            "minimum": 0.25,
+            "title": "Required Equity"
+          },
+          "action_evs": {
+            "$ref": "#/components/schemas/ActionEVs"
+          },
+          "incremental_bet_ev": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 4000000000.0,
+                "minimum": -4000000000.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incremental Bet Ev"
+          },
+          "recommendation": {
+            "type": "string",
+            "enum": [
+              "check",
+              "bet",
+              "either"
+            ],
+            "title": "Recommendation"
+          },
+          "acceptable_actions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "check",
+                "bet",
+                "fold"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Acceptable Actions"
+          },
+          "is_correct": {
+            "type": "boolean",
+            "title": "Is Correct"
+          },
+          "grade": {
+            "type": "string",
+            "enum": [
+              "good",
+              "bad",
+              "reasonable"
+            ],
+            "title": "Grade"
+          },
+          "made_hand": {
+            "type": "string",
+            "enum": [
+              "high_card",
+              "pair",
+              "two_pair",
+              "three_of_a_kind",
+              "straight",
+              "flush",
+              "full_house",
+              "four_of_a_kind",
+              "straight_flush",
+              "royal_flush"
+            ],
+            "title": "Made Hand"
+          },
+          "explanation": {
+            "items": {
+              "type": "string",
+              "maxLength": 2000,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "street",
+          "decision_board",
+          "pot_before_action",
+          "stacks_before_action",
+          "available_actions",
+          "bet_amount",
+          "analysis_policy",
+          "opponent_policy",
+          "simulation_method",
+          "sample_count",
+          "confidence_level",
+          "outcome_probabilities",
+          "outright_win_probability",
+          "equity",
+          "margin_of_error",
+          "equity_confidence_interval",
+          "required_equity",
+          "action_evs",
+          "incremental_bet_ev",
+          "recommendation",
+          "acceptable_actions",
+          "is_correct",
+          "grade",
+          "made_hand",
+          "explanation"
+        ],
+        "title": "FeedbackResponse"
+      },
+      "FoldReviewResponse": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "hypothetical",
+            "title": "Kind"
+          },
+          "private_cards": {
+            "items": {
+              "items": {
+                "type": "string",
+                "pattern": "^[2-9TJQKA][cdhs]$"
+              },
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Private Cards"
+          },
+          "winners": {
+            "items": {
+              "type": "integer",
+              "maximum": 3.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Winners"
+          },
+          "winning_hand": {
+            "type": "string",
+            "enum": [
+              "high_card",
+              "pair",
+              "two_pair",
+              "three_of_a_kind",
+              "straight",
+              "flush",
+              "full_house",
+              "four_of_a_kind",
+              "straight_flush",
+              "royal_flush"
+            ],
+            "title": "Winning Hand"
+          },
+          "hypothetical_payouts": {
+            "items": {
+              "type": "number",
+              "maximum": 4000000000.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Hypothetical Payouts"
+          },
+          "actual_winners": {
+            "items": {
+              "type": "integer",
+              "maximum": 3.0,
+              "minimum": 1.0
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Actual Winners"
+          },
+          "actual_payouts": {
+            "items": {
+              "type": "number",
+              "maximum": 4000000000.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Actual Payouts"
+          },
+          "actual_chip_changes": {
+            "items": {
+              "type": "number",
+              "maximum": 4000000000.0,
+              "minimum": -4000000000.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Actual Chip Changes"
+          },
+          "pot_awarded": {
+            "type": "integer",
+            "maximum": 4000000000.0,
+            "minimum": 1.0,
+            "title": "Pot Awarded"
+          },
+          "user_chip_change": {
+            "type": "number",
+            "maximum": 4000000000.0,
+            "minimum": -4000000000.0,
+            "title": "User Chip Change"
+          },
+          "user_payout": {
+            "type": "integer",
+            "const": 0,
+            "title": "User Payout"
+          },
+          "explanation": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "private_cards",
+          "winners",
+          "winning_hand",
+          "hypothetical_payouts",
+          "actual_winners",
+          "actual_payouts",
+          "actual_chip_changes",
+          "pot_awarded",
+          "user_chip_change",
+          "user_payout",
+          "explanation"
+        ],
+        "title": "FoldReviewResponse"
+      },
+      "GameRules": {
+        "properties": {
+          "player_count": {
+            "type": "integer",
+            "const": 4,
+            "title": "Player Count"
+          },
+          "starting_stack": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 1.0,
+            "title": "Starting Stack"
+          },
+          "opening_contribution": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 1.0,
+            "title": "Opening Contribution"
+          },
+          "bet_amount": {
+            "type": "integer",
+            "const": 10,
+            "title": "Bet Amount"
+          },
+          "opponent_policy": {
+            "type": "string",
+            "const": "check_or_call",
+            "title": "Opponent Policy"
+          },
+          "analysis_policy": {
+            "type": "string",
+            "const": "check_down",
+            "title": "Analysis Policy"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "player_count",
+          "starting_stack",
+          "opening_contribution",
+          "bet_amount",
+          "opponent_policy",
+          "analysis_policy"
+        ],
+        "title": "GameRules"
+      },
+      "GradeCounts": {
+        "properties": {
+          "good": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Good"
+          },
+          "bad": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Bad"
+          },
+          "reasonable": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Reasonable"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "good",
+          "bad",
+          "reasonable"
+        ],
+        "title": "GradeCounts"
+      },
+      "HandCounts": {
+        "properties": {
+          "completed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Completed"
+          },
+          "folded": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Folded"
+          },
+          "abandoned": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Abandoned"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "completed",
+          "folded",
+          "abandoned"
+        ],
+        "title": "HandCounts"
+      },
+      "HandResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "session_id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "folded",
+              "abandoned"
+            ],
+            "title": "Status"
+          },
+          "street": {
+            "type": "string",
+            "enum": [
+              "flop",
+              "turn",
+              "river"
+            ],
+            "title": "Street"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "awaiting_action",
+              "awaiting_continuation",
+              "showdown",
+              "fold_review",
+              "abandoned"
+            ],
+            "title": "Stage"
+          },
+          "user_cards": {
+            "items": {
+              "type": "string",
+              "pattern": "^[2-9TJQKA][cdhs]$"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "User Cards"
+          },
+          "community_cards": {
+            "items": {
+              "type": "string",
+              "pattern": "^[2-9TJQKA][cdhs]$"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 3,
+            "title": "Community Cards"
+          },
+          "pot": {
+            "type": "integer",
+            "maximum": 4000000000.0,
+            "minimum": 0.0,
+            "title": "Pot"
+          },
+          "stacks": {
+            "items": {
+              "type": "number",
+              "maximum": 4000000000.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Stacks"
+          },
+          "available_actions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "check",
+                "bet",
+                "fold"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Available Actions"
+          },
+          "bet_amount": {
+            "type": "integer",
+            "const": 10,
+            "title": "Bet Amount"
+          },
+          "opponent_policy": {
+            "type": "string",
+            "const": "check_or_call",
+            "title": "Opponent Policy"
+          },
+          "opponent_ranges": {
+            "items": {
+              "$ref": "#/components/schemas/OpponentRange"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Opponent Ranges"
+          },
+          "feedback": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "showdown": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShowdownResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FoldReviewResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "session_id",
+          "created_at",
+          "status",
+          "street",
+          "stage",
+          "user_cards",
+          "community_cards",
+          "pot",
+          "stacks",
+          "available_actions",
+          "bet_amount",
+          "opponent_policy",
+          "opponent_ranges",
+          "feedback",
+          "showdown",
+          "review"
+        ],
+        "title": "HandResponse"
+      },
+      "OpponentRange": {
+        "properties": {
+          "player_index": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Player Index"
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Description"
+          },
+          "hands": {
+            "items": {
+              "type": "string",
+              "pattern": "^[2-9TJQKA]{2}[so]?$"
+            },
+            "type": "array",
+            "maxItems": 169,
+            "minItems": 1,
+            "title": "Hands"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "player_index",
+          "id",
+          "name",
+          "description",
+          "hands"
+        ],
+        "title": "OpponentRange"
+      },
+      "OutcomeProbabilities": {
+        "properties": {
+          "outright_win": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Outright Win"
+          },
+          "two_way_tie": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Two Way Tie"
+          },
+          "three_way_tie": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Three Way Tie"
+          },
+          "four_way_tie": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Four Way Tie"
+          },
+          "loss": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Loss"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "outright_win",
+          "two_way_tie",
+          "three_way_tie",
+          "four_way_tie",
+          "loss"
+        ],
+        "title": "OutcomeProbabilities"
+      },
+      "ReplayResponse": {
+        "properties": {
+          "read_only": {
+            "type": "boolean",
+            "const": true,
+            "title": "Read Only"
+          },
+          "hand_status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed",
+              "folded",
+              "abandoned"
+            ],
+            "title": "Hand Status"
+          },
+          "step": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Step"
+          },
+          "total_steps": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Total Steps"
+          },
+          "event": {
+            "type": "string",
+            "enum": [
+              "deal",
+              "action",
+              "continue",
+              "abandon"
+            ],
+            "title": "Event"
+          },
+          "state": {
+            "$ref": "#/components/schemas/HandResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "read_only",
+          "hand_status",
+          "step",
+          "total_steps",
+          "event",
+          "state"
+        ],
+        "title": "ReplayResponse"
+      },
+      "SessionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "ended"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/GameRules"
+          },
+          "hand_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Hand Ids"
+          },
+          "active_hand_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Hand Id"
+          },
+          "statistics": {
+            "$ref": "#/components/schemas/SessionStatistics"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "rules",
+          "hand_ids",
+          "active_hand_id",
+          "statistics"
+        ],
+        "title": "SessionResponse"
+      },
+      "SessionStatistics": {
+        "properties": {
+          "hands": {
+            "$ref": "#/components/schemas/HandCounts"
+          },
+          "decisions": {
+            "$ref": "#/components/schemas/GradeCounts"
+          },
+          "net_chips": {
+            "type": "number",
+            "maximum": 4000000000.0,
+            "minimum": -4000000000.0,
+            "title": "Net Chips"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "hands",
+          "decisions",
+          "net_chips"
+        ],
+        "title": "SessionStatistics"
+      },
+      "ShowdownResponse": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "actual",
+            "title": "Kind"
+          },
+          "private_cards": {
+            "items": {
+              "items": {
+                "type": "string",
+                "pattern": "^[2-9TJQKA][cdhs]$"
+              },
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Private Cards"
+          },
+          "winners": {
+            "items": {
+              "type": "integer",
+              "maximum": 3.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Winners"
+          },
+          "winning_hand": {
+            "type": "string",
+            "enum": [
+              "high_card",
+              "pair",
+              "two_pair",
+              "three_of_a_kind",
+              "straight",
+              "flush",
+              "full_house",
+              "four_of_a_kind",
+              "straight_flush",
+              "royal_flush"
+            ],
+            "title": "Winning Hand"
+          },
+          "payouts": {
+            "items": {
+              "type": "number",
+              "maximum": 4000000000.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Payouts"
+          },
+          "chip_changes": {
+            "items": {
+              "type": "number",
+              "maximum": 4000000000.0,
+              "minimum": -4000000000.0
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Chip Changes"
+          },
+          "user_chip_change": {
+            "type": "number",
+            "maximum": 4000000000.0,
+            "minimum": -4000000000.0,
+            "title": "User Chip Change"
+          },
+          "pot_awarded": {
+            "type": "integer",
+            "maximum": 4000000000.0,
+            "minimum": 1.0,
+            "title": "Pot Awarded"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "private_cards",
+          "winners",
+          "winning_hand",
+          "payouts",
+          "chip_changes",
+          "user_chip_change",
+          "pot_awarded"
+        ],
+        "title": "ShowdownResponse"
+      },
+      "WinProbability": {
+        "properties": {
+          "percent": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Percent"
+          },
+          "confidence_interval_percent": {
+            "items": {
+              "type": "number",
+              "maximum": 100.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Confidence Interval Percent"
+          },
+          "confidence_level": {
+            "type": "number",
+            "maximum": 0.95,
+            "minimum": 0.95,
+            "title": "Confidence Level"
+          },
+          "display": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Display"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "percent",
+          "confidence_interval_percent",
+          "confidence_level",
+          "display"
+        ],
+        "title": "WinProbability"
+      }
+    }
+  }
+}

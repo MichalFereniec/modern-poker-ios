@@ -1,0 +1,679 @@
+{
+  "session": {
+    "id": "10000000-0000-4000-8000-000000000001",
+    "status": "active",
+    "created_at": "2026-10-09T10:00:00Z",
+    "rules": {
+      "player_count": 4,
+      "starting_stack": 1000,
+      "opening_contribution": 10,
+      "bet_amount": 10,
+      "opponent_policy": "check_or_call",
+      "analysis_policy": "check_down"
+    },
+    "hand_ids": [],
+    "active_hand_id": null,
+    "statistics": {
+      "hands": {
+        "completed": 0,
+        "folded": 0,
+        "abandoned": 0
+      },
+      "decisions": {
+        "good": 0,
+        "bad": 0,
+        "reasonable": 0
+      },
+      "net_chips": 0
+    }
+  },
+  "flop": {
+    "id": "20000000-0000-4000-8000-000000000001",
+    "session_id": "10000000-0000-4000-8000-000000000001",
+    "created_at": "2026-10-09T10:01:00Z",
+    "status": "active",
+    "street": "flop",
+    "stage": "awaiting_action",
+    "user_cards": [
+      "As",
+      "Ks"
+    ],
+    "community_cards": [
+      "Qs",
+      "Js",
+      "Ts"
+    ],
+    "pot": 40,
+    "stacks": [
+      990,
+      990,
+      990,
+      990
+    ],
+    "available_actions": [
+      "check",
+      "bet",
+      "fold"
+    ],
+    "bet_amount": 10,
+    "opponent_policy": "check_or_call",
+    "opponent_ranges": [
+      {
+        "player_index": 1,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      },
+      {
+        "player_index": 2,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      },
+      {
+        "player_index": 3,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      }
+    ],
+    "feedback": null,
+    "showdown": null,
+    "review": null
+  },
+  "bet": {
+    "id": "20000000-0000-4000-8000-000000000001",
+    "session_id": "10000000-0000-4000-8000-000000000001",
+    "created_at": "2026-10-09T10:01:00Z",
+    "status": "active",
+    "street": "flop",
+    "stage": "awaiting_continuation",
+    "user_cards": [
+      "As",
+      "Ks"
+    ],
+    "community_cards": [
+      "Qs",
+      "Js",
+      "Ts"
+    ],
+    "pot": 80,
+    "stacks": [
+      980,
+      980,
+      980,
+      980
+    ],
+    "available_actions": [],
+    "bet_amount": 10,
+    "opponent_policy": "check_or_call",
+    "opponent_ranges": [
+      {
+        "player_index": 1,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      },
+      {
+        "player_index": 2,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      },
+      {
+        "player_index": 3,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      }
+    ],
+    "feedback": {
+      "action": "bet",
+      "street": "flop",
+      "decision_board": [
+        "Qs",
+        "Js",
+        "Ts"
+      ],
+      "pot_before_action": 40,
+      "stacks_before_action": [
+        990,
+        990,
+        990,
+        990
+      ],
+      "available_actions": [
+        "check",
+        "bet",
+        "fold"
+      ],
+      "bet_amount": 10,
+      "analysis_policy": "check_down",
+      "opponent_policy": "check_or_call",
+      "simulation_method": "exact",
+      "sample_count": 0,
+      "confidence_level": 0.95,
+      "outcome_probabilities": {
+        "outright_win": 1,
+        "two_way_tie": 0,
+        "three_way_tie": 0,
+        "four_way_tie": 0,
+        "loss": 0
+      },
+      "outright_win_probability": {
+        "percent": 100,
+        "confidence_interval_percent": [
+          100,
+          100
+        ],
+        "confidence_level": 0.95,
+        "display": "100.0%"
+      },
+      "equity": 1,
+      "margin_of_error": 0,
+      "equity_confidence_interval": [
+        1,
+        1
+      ],
+      "required_equity": 0.25,
+      "action_evs": {
+        "check": 40,
+        "bet": 70,
+        "fold": 0
+      },
+      "incremental_bet_ev": 30,
+      "recommendation": "bet",
+      "acceptable_actions": [
+        "bet"
+      ],
+      "is_correct": true,
+      "grade": "good",
+      "made_hand": "royal_flush",
+      "explanation": [
+        "Your royal flush always wins. Betting adds an expected 30 chips over checking, because all three opponents call."
+      ]
+    },
+    "showdown": null,
+    "review": null
+  },
+  "turn": {
+    "id": "20000000-0000-4000-8000-000000000001",
+    "session_id": "10000000-0000-4000-8000-000000000001",
+    "created_at": "2026-10-09T10:01:00Z",
+    "status": "active",
+    "street": "turn",
+    "stage": "awaiting_action",
+    "user_cards": [
+      "As",
+      "Ks"
+    ],
+    "community_cards": [
+      "Qs",
+      "Js",
+      "Ts",
+      "2c"
+    ],
+    "pot": 80,
+    "stacks": [
+      980,
+      980,
+      980,
+      980
+    ],
+    "available_actions": [
+      "check",
+      "bet",
+      "fold"
+    ],
+    "bet_amount": 10,
+    "opponent_policy": "check_or_call",
+    "opponent_ranges": [
+      {
+        "player_index": 1,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      },
+      {
+        "player_index": 2,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      },
+      {
+        "player_index": 3,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "22",
+          "33",
+          "44",
+          "55"
+        ]
+      }
+    ],
+    "feedback": null,
+    "showdown": null,
+    "review": null
+  },
+  "showdown": {
+    "id": "20000000-0000-4000-8000-000000000002",
+    "session_id": "10000000-0000-4000-8000-000000000001",
+    "created_at": "2026-10-09T10:01:00Z",
+    "status": "completed",
+    "street": "river",
+    "stage": "showdown",
+    "user_cards": [
+      "2c",
+      "3d"
+    ],
+    "community_cards": [
+      "As",
+      "Ks",
+      "Qs",
+      "Js",
+      "Ts"
+    ],
+    "pot": 0,
+    "stacks": [
+      1000,
+      1000,
+      1000,
+      1000
+    ],
+    "available_actions": [],
+    "bet_amount": 10,
+    "opponent_policy": "check_or_call",
+    "opponent_ranges": [
+      {
+        "player_index": 1,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "44",
+          "55",
+          "66",
+          "77"
+        ]
+      },
+      {
+        "player_index": 2,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "44",
+          "55",
+          "66",
+          "77"
+        ]
+      },
+      {
+        "player_index": 3,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "44",
+          "55",
+          "66",
+          "77"
+        ]
+      }
+    ],
+    "feedback": {
+      "action": "bet",
+      "street": "river",
+      "decision_board": [
+        "As",
+        "Ks",
+        "Qs",
+        "Js",
+        "Ts"
+      ],
+      "pot_before_action": 120,
+      "stacks_before_action": [
+        970,
+        970,
+        970,
+        970
+      ],
+      "available_actions": [
+        "check",
+        "bet",
+        "fold"
+      ],
+      "bet_amount": 10,
+      "analysis_policy": "check_down",
+      "opponent_policy": "check_or_call",
+      "simulation_method": "exact",
+      "sample_count": 0,
+      "confidence_level": 0.95,
+      "outcome_probabilities": {
+        "outright_win": 0,
+        "two_way_tie": 0,
+        "three_way_tie": 0,
+        "four_way_tie": 1,
+        "loss": 0
+      },
+      "outright_win_probability": {
+        "percent": 0,
+        "confidence_interval_percent": [
+          0,
+          0
+        ],
+        "confidence_level": 0.95,
+        "display": "0.0%"
+      },
+      "equity": 0.25,
+      "margin_of_error": 0,
+      "equity_confidence_interval": [
+        0.25,
+        0.25
+      ],
+      "required_equity": 0.25,
+      "action_evs": {
+        "check": 30,
+        "bet": 30,
+        "fold": 0
+      },
+      "incremental_bet_ev": 0,
+      "recommendation": "either",
+      "acceptable_actions": [
+        "check",
+        "bet"
+      ],
+      "is_correct": true,
+      "grade": "reasonable",
+      "made_hand": "royal_flush",
+      "explanation": [
+        "The board gives every player a royal flush. Your outright-win probability is 0%, but your pot share is exactly 25%. Betting and checking both have EV of 30 chips from this decision onward."
+      ]
+    },
+    "showdown": {
+      "kind": "actual",
+      "private_cards": [
+        [
+          "2c",
+          "3d"
+        ],
+        [
+          "4c",
+          "4d"
+        ],
+        [
+          "5c",
+          "5d"
+        ],
+        [
+          "6c",
+          "6d"
+        ]
+      ],
+      "winners": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "winning_hand": "royal_flush",
+      "payouts": [
+        40,
+        40,
+        40,
+        40
+      ],
+      "chip_changes": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "user_chip_change": 0,
+      "pot_awarded": 160
+    },
+    "review": null
+  },
+  "fold": {
+    "id": "20000000-0000-4000-8000-000000000002",
+    "session_id": "10000000-0000-4000-8000-000000000001",
+    "created_at": "2026-10-09T10:01:00Z",
+    "status": "folded",
+    "street": "river",
+    "stage": "fold_review",
+    "user_cards": [
+      "2c",
+      "3d"
+    ],
+    "community_cards": [
+      "As",
+      "Ks",
+      "Qs",
+      "Js",
+      "Ts"
+    ],
+    "pot": 0,
+    "stacks": [
+      970,
+      1010,
+      1010,
+      1010
+    ],
+    "available_actions": [],
+    "bet_amount": 10,
+    "opponent_policy": "check_or_call",
+    "opponent_ranges": [
+      {
+        "player_index": 1,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "44",
+          "55",
+          "66",
+          "77"
+        ]
+      },
+      {
+        "player_index": 2,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "44",
+          "55",
+          "66",
+          "77"
+        ]
+      },
+      {
+        "player_index": 3,
+        "id": "small_pairs",
+        "name": "Small pairs",
+        "description": "This opponent holds one of the listed pairs. All compatible joint assignments have equal probability.",
+        "hands": [
+          "44",
+          "55",
+          "66",
+          "77"
+        ]
+      }
+    ],
+    "feedback": {
+      "action": "fold",
+      "street": "river",
+      "decision_board": [
+        "As",
+        "Ks",
+        "Qs",
+        "Js",
+        "Ts"
+      ],
+      "pot_before_action": 120,
+      "stacks_before_action": [
+        970,
+        970,
+        970,
+        970
+      ],
+      "available_actions": [
+        "check",
+        "bet",
+        "fold"
+      ],
+      "bet_amount": 10,
+      "analysis_policy": "check_down",
+      "opponent_policy": "check_or_call",
+      "simulation_method": "exact",
+      "sample_count": 0,
+      "confidence_level": 0.95,
+      "outcome_probabilities": {
+        "outright_win": 0,
+        "two_way_tie": 0,
+        "three_way_tie": 0,
+        "four_way_tie": 1,
+        "loss": 0
+      },
+      "outright_win_probability": {
+        "percent": 0,
+        "confidence_interval_percent": [
+          0,
+          0
+        ],
+        "confidence_level": 0.95,
+        "display": "0.0%"
+      },
+      "equity": 0.25,
+      "margin_of_error": 0,
+      "equity_confidence_interval": [
+        0.25,
+        0.25
+      ],
+      "required_equity": 0.25,
+      "action_evs": {
+        "check": 30,
+        "bet": 30,
+        "fold": 0
+      },
+      "incremental_bet_ev": 0,
+      "recommendation": "either",
+      "acceptable_actions": [
+        "check",
+        "bet"
+      ],
+      "is_correct": false,
+      "grade": "bad",
+      "made_hand": "royal_flush",
+      "explanation": [
+        "Checking guarantees an equal share of this pot. Folding forfeits that share and has EV 0 from this decision onward. The later hypothetical review does not change this grade."
+      ]
+    },
+    "showdown": null,
+    "review": {
+      "kind": "hypothetical",
+      "private_cards": [
+        [
+          "2c",
+          "3d"
+        ],
+        [
+          "4c",
+          "4d"
+        ],
+        [
+          "5c",
+          "5d"
+        ],
+        [
+          "6c",
+          "6d"
+        ]
+      ],
+      "winners": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "winning_hand": "royal_flush",
+      "hypothetical_payouts": [
+        30,
+        30,
+        30,
+        30
+      ],
+      "actual_winners": [
+        1,
+        2,
+        3
+      ],
+      "actual_payouts": [
+        0,
+        40,
+        40,
+        40
+      ],
+      "actual_chip_changes": [
+        -30,
+        10,
+        10,
+        10
+      ],
+      "pot_awarded": 120,
+      "user_chip_change": -30,
+      "user_payout": 0,
+      "explanation": "If you had checked, all four players would have received 30. You folded, so the three opponents receive 40 each. Your actual loss is the 30 chips already committed."
+    }
+  }
+}
