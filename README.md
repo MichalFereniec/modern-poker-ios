@@ -1,90 +1,183 @@
-# Modern Poker
+<h1 align="center">♠ Modern Poker</h1>
 
-Trener Texas Hold'em na iPhone'a. Rozgrywasz **pięć pełnych rozdań** przeciwko trzem rywalom z backendem albo jednemu w trybie lokalnym: flop → turn → river → showdown. Podejmujesz decyzje przy stole, a po każdej dostajesz krótką analizę. SwiftUI, ciemny pokerowy stół, Liquid Glass, animowane rozdawanie kart i żetony.
+<p align="center">
+  <strong>A poker table built for learning.</strong><br />
+  Play a complete hand. Review each decision. See how the cards change your odds.
+</p>
 
-## Uruchomienie
+<p align="center">
+  <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white" />
+  <img alt="SwiftUI" src="https://img.shields.io/badge/UI-SwiftUI-79E3BE" />
+  <img alt="iOS 26.4 and later" src="https://img.shields.io/badge/iOS-26.4%2B-202A27?logo=apple&logoColor=white" />
+  <img alt="60 tests passed in the latest verification" src="https://img.shields.io/badge/Tests-60%20passed-79E3BE" />
+</p>
 
-1. Otwórz `ModernPoker.xcodeproj` w Xcode 26.4 lub nowszym.
-2. Wybierz schemat **ModernPoker** i symulator iPhone z iOS **26.4 lub nowszym**.
-3. Run. Naciśnij **Zajmij miejsce**.
+<p align="center">
+  <a href="#at-the-table">Screenshots</a> ·
+  <a href="#the-experience">Features</a> ·
+  <a href="#run-the-app">Run the app</a> ·
+  <a href="#connect-the-backend">Backend</a> ·
+  <a href="#inside-the-numbers">The math</a>
+</p>
 
-Tryb lokalny generuje rozdania i oblicza equity metodą Monte Carlo. Nie wymaga logowania, klucza do LLM ani serwera. Na fizycznym urządzeniu wybierz swój Team w Signing & Capabilities. Identyfikator aplikacji: `com.modernpoker.trainer`.
+Modern Poker is a native iPhone Texas Hold’em trainer with **five complete hands per session**, decisions on every street, and feedback based on the information available when you acted. Play against three opponents through the Poker Tutor backend, or train offline against one local opponent.
+
+## At the table
+
+<table>
+  <tr>
+    <th align="center">01 · Your decision</th>
+    <th align="center">02 · The showdown</th>
+    <th align="center">03 · Your session</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/demo/modern-poker-backend-flop.png" width="270" alt="Four-player flop with three hidden opponent hands and check, bet, and fold controls" /></td>
+    <td align="center"><img src="docs/demo/modern-poker-backend-showdown.png" width="270" alt="Showdown revealing all three opponents and the winning 120-chip pot" /></td>
+    <td align="center"><img src="docs/demo/modern-poker-backend-summary.png" width="270" alt="Five-hand session review listing completed hands and their outcomes" /></td>
+  </tr>
+  <tr>
+    <td align="center">Read the board.<br />Choose your move.</td>
+    <td align="center">Reveal every hand.<br />Follow the payout.</td>
+    <td align="center">Review five hands.<br />Keep learning.</td>
+  </tr>
+</table>
+
+*Actual iPhone 17 Pro simulator screenshots captured with RocketSim during the backend integration demo. The app interface is currently in Polish; this README is in English.*
+
+## The experience
+
+- **One hand, every street.** Your hole cards stay fixed as the board progresses from flop to turn, river, and showdown. Continue after reviewing each decision.
+- **Feedback after your move.** See equity, uncertainty, and an explanation of the decision. Backend mode also shows a recommendation, decision grade, check/bet EV, and the probability of winning without splitting the pot.
+- **Disclosed opponent ranges.** Inspect the assumed range for each opponent before acting. Teaching equity uses those ranges and the public board.
+- **A table with motion.** Emerald felt, ivory cards, champagne accents, native Liquid Glass controls, staged card dealing, chip flights, haptics, and celebrations.
+- **Five hands, one session.** Count completed hands rather than button taps. Backend balances carry into the next hand, including fractional split-pot payouts.
+- **Visible network recovery.** A lost action response is recovered from the server’s saved state. Remote failures remain visible; the app never silently switches to offline data.
+
+### Two ways to play
+
+| | Backend training | Offline training |
+| --- | --- | --- |
+| Table | You + three opponents | You + one opponent |
+| Decisions | CHECK · BET 10 · FOLD | CHECK · CALL · BET · RAISE · FOLD, as legal |
+| Opponent policy | Check or call | Bet 50 on flop, check turn, bet half-pot on river; call your bets/raises |
+| Analysis | Server estimates, recommendations, and decision grades under the check-down model | On-device Monte Carlo equity and call-price benchmarks |
+| Hand ending | Showdown or fold with a separate hypothetical review | Showdown, fold, or an all-in runout |
+| Connection | Poker Tutor API | None required |
+
+All chips are virtual. Deals do not depend on previous results or how often you open the app.
+
+## Run the app
+
+**Requirements:** Xcode 26.4 or later, an iOS 26.4+ simulator or iPhone, and Swift 6. No third-party iOS dependencies or LLM key are required.
+
+```sh
+git clone https://github.com/MichalFereniec/modern-poker-ios.git
+cd modern-poker-ios
+open ModernPoker.xcodeproj
+```
+
+1. Select the **ModernPoker** scheme and an iPhone simulator.
+2. Run the app and tap **Zajmij miejsce** (“Take a seat”).
+3. To train offline, leave **Korzystaj z backendu** (“Use backend”) disabled in Settings.
+
+For a physical iPhone, select your development team in **Signing & Capabilities**. The bundle identifier is `com.modernpoker.trainer`.
+
+## Connect the backend
+
+The separate [Poker Tutor backend](https://github.com/kosiecki-alle/alle-workshop2) runs on Python 3.14 with FastAPI, SQLite, and `uv`. Access to its repository is required.
+
+```sh
+git clone https://github.com/kosiecki-alle/alle-workshop2.git
+cd alle-workshop2
+uv sync --locked
+uv run uvicorn poker_tutor.api:app --host 127.0.0.1 --port 8080
+```
+
+Open [Swagger UI](http://localhost:8080/docs) or the [live OpenAPI document](http://localhost:8080/openapi.json).
+
+In the app, open **Settings → Korzystaj z backendu → Adres serwera → Zapisz** (“Use backend → Server address → Save”) and enter `http://localhost:8080`.
+
+| Device | Connection |
+| --- | --- |
+| iOS Simulator | `http://localhost:8080` reaches the backend on your Mac |
+| Physical iPhone | Bind the server to `0.0.0.0` on a trusted LAN and use your Mac’s LAN address, e.g. `http://192.168.1.10:8080` |
+
+The local MVP API has no authentication. Use HTTPS when connecting to a public server.
+
+### API lifecycle
+
+The current contract is **[API 1.0.0 · OpenAPI JSON](docs/backend-openapi.json)**. Paths below use the `/api/v1` prefix.
+
+| Operation | Endpoint | Purpose |
+| --- | --- | --- |
+| Create session | `POST /sessions` | Start a session using an `Idempotency-Key` UUID |
+| Deal hand | `POST /sessions/{session}/hands` | Deal the flop; use a new creation UUID |
+| Decide | `POST /sessions/{session}/hands/{hand}/actions` | Submit `{"action":"bet","street":"flop"}` and show feedback |
+| Continue | `POST /sessions/{session}/hands/{hand}/continue` | Submit `{"street":"flop"}` to reveal the next card or settle showdown |
+| Recover | `GET /sessions/{session}/hands/{hand}` | Read the committed state after an uncertain response |
+| End session | `POST /sessions/{session}/end` | Close the session and refund unfinished contributions |
+
+Actions and continuation are separate requests: feedback appears before the next card is revealed. On a fold, the actual pot is awarded among the remaining opponents; the four-player hypothetical review is shown separately and never credited to the user’s balance.
+
+Earlier prototype contracts are retained in [`docs/openapi.json`](docs/openapi.json) and [`docs/openapi-v1.json`](docs/openapi-v1.json).
+
+## Inside the numbers
+
+**Equity** is the expected share of the pot, including split pots, against the disclosed opponent ranges. Known cards are excluded from simulations. Monte Carlo estimates include uncertainty and do not predict the exact outcome of a particular deal.
+
+### Backend: check versus bet
+
+The backend compares actions under a simple **check-down reference policy**: each of three opponents calls a bet of 10, and the calculation assumes no later betting costs.
+
+With equity `e` and the pot before acting `P`:
+
+```text
+EV(check) = e × P
+EV(bet)   = e × (P + 40) − 10
+EV(fold)  = 0
+
+Extra EV from betting = 40 × e − 10
+Break-even bet equity = 25%
+```
+
+Decision grades apply to this stated policy and account for simulation uncertainty. A sampled analysis uses 10,000 trials; mathematically exact cases can report zero samples.
+
+### Offline: the price of a call
+
+When facing a bet, the current pot includes the opponent’s wager and excludes your call:
+
+```text
+Required equity = toCall / (pot + toCall)
+EV(call)        = equity × (pot + toCall) − toCall
+```
+
+These calculations omit future betting, rake, and ICM. They help explain the current decision under specific assumptions; they are not a GTO solver or a model trained on professional games. A winning runout alone does not establish that an earlier decision was good.
+
+## Development
+
+| Location | Responsibility |
+| --- | --- |
+| `ModernPoker/Core` | Models, hand engine, hand ranking, Monte Carlo, validation, actor-based HTTP client, and `@Observable` session store |
+| `ModernPoker/UI` | SwiftUI screens, cards, table, controls, motion, and haptics |
+| `Config/App.xcconfig` | Swift 6, strict concurrency, deployment target, and build settings |
+| `Tests` | Swift Testing suites and backend fixtures |
+| `docs` | API contracts, screenshots, and verification notes |
 
 ```sh
 xcodebuild -project ModernPoker.xcodeproj -scheme ModernPoker \
-  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -configuration Debug \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   CODE_SIGNING_ALLOWED=NO build
 
 swift test --scratch-path /private/tmp/modern-poker-tests
 ```
 
-Xcode używa domyślnego systemowego DerivedData. Biblioteka testowa i aplikacja kompilują te same pliki z `ModernPoker/Core`.
+Xcode uses its default system DerivedData location. The app and Swift package tests compile the same core source files.
 
-## Jak przebiega lokalne rozdanie
+### Verified on the simulator
 
-- Twoje dwie karty i ukryte karty rywala są ustalone na początku. Na flopie widać trzy karty stołu; turn i river dokładają po jednej. Karty nie są losowane ponownie po decyzji.
-- Dostępne akcje to **CHECK, CALL, FOLD, BET, RAISE**, zależnie od stanu. Przy zakładach wybierasz legalne, przygotowane kwoty.
-- Fold kończy rozdanie. All-in uruchamia wyłożenie pozostałych kart. Przy showdown odsłaniane są karty rywala i rozliczana pula, także przy remisie.
-- Sesja liczy pięć zakończonych rozdań, nie pięć kliknięć. Jedno rozdanie może zawierać kilka decyzji.
-- Zakres rywala jest widoczny przed decyzją; equity i wyjaśnienie pojawiają się po niej. Equity jest liczone względem tego zakresu, a nie ukrytych kart, które zna silnik.
+The latest implementation verification on **October 9, 2026** passed the iOS build and **60 Swift Testing tests across six suites**. RocketSim checks covered a real backend hand through flop → turn → river → showdown, feedback, fold handling, payouts, a five-hand session, and persisted backend settings after relaunch.
 
-Lokalny przeciwnik ma prostą, jawną politykę demonstracyjną: stawia 50 na flopie, czeka na turnie, stawia połowę puli na riverze i sprawdza twoje zakłady/podbicia. Legalne akcje i kwoty uwzględniają aktualne żetony. To ograniczony trener podstaw, nie solver GTO ani model profesjonalnego przeciwnika.
+Tests also cover hand rankings, ties, blockers, card continuity, chip conservation, action legality, uncertainty, lost-response recovery, cancellation, fractional payouts, and restoring the original decision snapshot.
 
-## Backend dla Krzyśka
-
-Aktualny backend Krzyśka: **[docs/backend-openapi.json](docs/backend-openapi.json)** — API 1.0.0, `/api/v1`. Pliki `openapi.json` (wcześniejszy projekt v2) i `openapi-v1.json` są zachowane jako referencje poprzednich prototypów.
-
-Backend: `/Users/michal.fereniec/Developer/alle-workshop2`.
-
-```sh
-cd /Users/michal.fereniec/Developer/alle-workshop2
-uv run uvicorn poker_tutor.api:app --host 127.0.0.1 --port 8080
-```
-
-- `POST /api/v1/sessions` oraz `/sessions/{id}/hands`: tworzenie z nagłówkiem `Idempotency-Key` UUID.
-- `POST /sessions/{id}/hands/{id}/actions`: `{"action":"bet","street":"flop"}`; analizę pokazujemy przed odkryciem następnej karty.
-- `POST /sessions/{id}/hands/{id}/continue`: `{"street":"flop"}`; turn, river albo showdown.
-- `GET` sesji i rozdania odzyskuje stan po przerwanej odpowiedzi. Nie powtarzamy ruchu, który już został zapisany.
-- `POST /sessions/{id}/end`: zamknięcie sesji, zwrot niezakończonych wkładów.
-
-W trybie backendu: czterech graczy, otwarcie po 10, CHECK / BET 10 / FOLD. Rywale czekają lub sprawdzają; salda przechodzą do następnych rozdań. Podział puli zachowuje ułamkowe żetony. Analiza dotyczy ujawnionych zakresów trzech rywali i uproszczonego modelu check-down. FOLD pokazuje osobno hipotetyczny wynik; rzeczywista wypłata użytkownika wynosi zero.
-
-W aplikacji: **Ustawienia → Korzystaj z backendu → Adres serwera → Zapisz**.
-
-- Symulator: `http://localhost:8080` łączy się z serwerem na Macu.
-- Fizyczny iPhone: adres komputera w tej samej sieci lokalnej; serwer musi nasłuchiwać na interfejsie sieciowym. Dla serwera publicznego użyj HTTPS.
-- Tryb lokalny i zdalny obsługuje wspólny serwis. Błąd backendu pozostaje widoczny i można ponowić żądanie. Aplikacja nie przełącza się samoczynnie na lokalne obliczenia.
-- Serwer nie jest częścią tego projektu. Krzysiek może zaimplementować kontrakt w wybranej technologii.
-
-## Co znaczą liczby
-
-Equity oznacza oczekiwany udział w puli, uwzględniający remisy. Jest estymowane względem jawnego założenia o zakresie rywala z wykluczeniem znanych kart. Wynik Monte Carlo ma niepewność; nie jest dokładną prognozą wyniku tego konkretnego rozdania.
-
-Gdy trzeba zapłacić za call, pokazujemy porównanie jego ceny z equity. `pot` obejmuje już zakład przeciwnika, lecz nie obejmuje twojego call:
-
-```text
-próg ceny call = toCall / (pot + toCall)
-EV(call) bez dalszych kosztów = equity × (pot + toCall) − toCall
-EV(fold) = 0 względem chwili decyzji
-```
-
-Na flopie i turnie dalsza licytacja może zmienić opłacalność. Ten rachunek pomija przyszłe zakłady, prowizję i ICM; sam nie dowodzi, że ruch jest optymalny. Nie służy też do wyznaczania najlepszego bet lub raise. Aplikacja objaśnia bieżącą sytuację bez przyznawania definitywnej strategicznej oceny na podstawie samego equity. Wygrany runout nie jest dowodem dobrej wcześniejszej decyzji.
-
-Losowanie nie zależy od wcześniejszych wyników ani częstotliwości używania aplikacji.
-
-## Kod i konwencje
-
-- `ModernPoker/Core`: modele, silnik rozdania, ranking układów, Monte Carlo, walidacja, klient HTTP i store sesji oparty na Observation.
-- `ModernPoker/UI`: natywne ekrany i komponenty SwiftUI, karty, stół i animacje.
-- `Config/App.xcconfig`: ustawienia kompilacji, deployment target 26.4, Swift 6.
-- `Tests`: testy Swift Testing.
-- [AGENTS.md](AGENTS.md): zasady dalszej pracy i priorytety.
-- [docs/ios-reference-audit.md](docs/ios-reference-audit.md): audyt wszystkich 31 `AGENTS.md` z buyers-app-ios i źródła wykorzystanych wzorców.
-
-Brak zewnętrznych zależności aplikacji. Zachowujemy dotychczasowe wsparcie Reduce Motion i etykiety VoiceOver; priorytetem tego MVP jest pełny przebieg gry w zatwierdzonym interfejsie.
-
-## Weryfikacja
-
-**Build i 60 testów przeszły.** W RocketSim sprawdzono pełne rozdanie z rzeczywistym backendem Krzyśka, analizę na każdej ulicy, pas, wypłaty, podsumowanie pięciu rozdań oraz zapis ustawień po ponownym uruchomieniu. Szczegóły: [docs/verification.md](docs/verification.md).
-
-Aktualne widoki: [flop](docs/demo/modern-poker-v2-flop.png), [turn](docs/demo/modern-poker-v2-turn.png), [showdown](docs/demo/modern-poker-v2-showdown.png). Starsze materiały bez `v2` dotyczą poprzedniego treningu pojedynczej decyzji.
+See [verification notes](docs/verification.md), [contributor instructions](AGENTS.md), and the [iOS conventions audit](docs/ios-reference-audit.md). The supporting notes are currently in Polish. Physical-device signing and TestFlight distribution have not been verified.
